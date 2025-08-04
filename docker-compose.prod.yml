@@ -1,0 +1,198 @@
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: moms_milk_mysql_prod
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-moms_milk}
+      MYSQL_USER: ${MYSQL_USER:-app_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - mysql_backups:/backups
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - moms_milk_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --bind-address=0.0.0.0
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --innodb-buffer-pool-size=256M
+      --max-connections=100
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # NestJS API - Production
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: production
+    container_name: moms_milk_api_prod
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: "mysql://root:${MYSQL_ROOT_PASSWORD}@mysql:3306/${MYSQL_DATABASE:-moms_milk}"
+      JWT_SECRET: ${JWT_SECRET}
+      DEFAULT_OTP: ${DEFAULT_OTP:-759409}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      LOG_LEVEL: ${LOG_LEVEL:-warn}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-50}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10mb}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      - app_uploads:/app/uploads
+      - app_logs:/usr/src/app/logs
+    networks:
+      - moms_milk_network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 10 &&
+        npm run prisma:push &&
+        npm run start:prod
+      "
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: moms_milk_nginx_prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - app_uploads:/var/www/uploads:ro
+    networks:
+      - moms_milk_network
+    depends_on:
+      - api
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+  # Database Backup Service
+  db-backup:
+    image: mysql:8.0
+    container_name: moms_milk_backup_prod
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-moms_milk}
+    volumes:
+      - mysql_backups:/backups
+      - ./docker/scripts/backup.sh:/backup.sh:ro
+    networks:
+      - moms_milk_network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: >
+      sh -c "
+        chmod +x /backup.sh &&
+        while true; do
+          echo 'Running database backup...' &&
+          /backup.sh &&
+          echo 'Backup completed. Sleeping for 24 hours...' &&
+          sleep 86400
+        done
+      "
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Setting up production database...' &&
+        npx prisma generate &&
+        npx prisma migrate deploy &&
+        echo 'Database setup complete. Starting production server...' &&
+        node dist/main.js
+      "
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: moms_milk_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+    networks:
+      - moms_milk_network
+    depends_on:
+      - api
+    profiles:
+      - nginx
+
+volumes:
+  mysql_data:
+    driver: local
+  mysql_backups:
+    driver: local
+  app_uploads:
+    driver: local
+  app_logs:
+    driver: local
+
+networks:
+  moms_milk_network:
+    driver: bridge

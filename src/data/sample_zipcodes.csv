@@ -1,0 +1,75 @@
+country,zipcode,placename,latitude,longitude
+USA,10001,New York,40.7505,-73.9934
+USA,10002,New York,40.7158,-73.9861
+USA,10003,New York,40.7316,-73.9893
+USA,90210,Beverly Hills,34.0901,-118.4065
+USA,94102,San Francisco,37.7849,-122.4094
+USA,60601,Chicago,41.8858,-87.6229
+USA,33101,Miami,25.7743,-80.1937
+USA,75201,Dallas,32.7767,-96.7970
+USA,30301,Atlanta,33.7490,-84.3880
+USA,98101,Seattle,47.6062,-122.3321
+UK,SW1A 1AA,London,51.5014,-0.1419
+UK,M1 1AA,Manchester,53.4808,-2.2426
+UK,EH1 1YZ,Edinburgh,55.9533,-3.1883
+Germany,10115,Berlin,52.5200,13.4050
+Germany,80331,Munich,48.1351,11.5820
+Germany,20095,Hamburg,53.5511,9.9937
+France,75001,Paris,48.8566,2.3522
+France,69001,Lyon,45.7640,4.8357
+France,13001,Marseille,43.2965,5.3698
+Spain,28001,Madrid,40.4168,-3.7038
+Spain,08001,Barcelona,41.3851,2.1734
+Spain,41001,Seville,37.3891,-5.9845
+Italy,00100,Rome,41.9028,12.4964
+Italy,20121,Milan,45.4642,9.1900
+Italy,80121,Naples,40.8518,14.2681
+Belgium,1000,Brussels,50.8503,4.3517
+Belgium,2000,Antwerp,51.2194,4.4025
+Netherlands,1011,Amsterdam,52.3676,4.9041
+Netherlands,3011,Rotterdam,51.9244,4.4777
+Switzerland,1200,Geneva,46.2044,6.1432
+Switzerland,8001,Zurich,47.3769,8.5417
+Austria,1010,Vienna,48.2082,16.3738
+Austria,5020,Salzburg,47.8095,13.0550
+Slovenia,1000,Ljubljana,46.0569,14.5058
+China,100001,Beijing,39.9042,116.4074
+China,200001,Shanghai,31.2304,121.4737
+China,518000,Shenzhen,22.5431,114.0579
+China,510000,Guangzhou,23.1291,113.2644
+Japan,100-0001,Tokyo,35.6762,139.6503
+Japan,530-0001,Osaka,34.6937,135.5023
+Japan,231-0001,Yokohama,35.4437,139.6380
+India,110001,New Delhi,28.6139,77.2090
+India,400001,Mumbai,19.0760,72.8777
+India,560001,Bangalore,12.9716,77.5946
+India,600001,Chennai,13.0827,80.2707
+India,700001,Kolkata,22.5726,88.3639
+India,302001,Jaipur,26.9124,75.7873
+Australia,01000,Sydney,-33.8688,151.2093
+Australia,3000,Melbourne,-37.8136,144.9631
+Australia,4000,Brisbane,-27.4698,153.0251
+Australia,6000,Perth,-31.9505,115.8605
+Australia,5000,Adelaide,-34.9285,138.6007
+Australia,7000,Hobart,-42.8821,147.3272
+Canada,K1A 0A6,Ottawa,45.4215,-75.6972
+Canada,M5H 2N2,Toronto,43.6532,-79.3832
+Canada,H2Y 1C6,Montreal,45.5017,-73.5673
+Canada,V6B 1A1,Vancouver,49.2827,-123.1207
+Canada,T2P 2G8,Calgary,51.0447,-114.0719
+South Africa,1008,Cape Town,-33.9249,18.4241
+South Africa,2001,Johannesburg,-26.2041,28.0473
+South Africa,0001,Pretoria,-25.7479,28.2293
+Brazil,01310-100,São Paulo,-23.5505,-46.6333
+Brazil,20040-020,Rio de Janeiro,-22.9068,-43.1729
+Brazil,70040-010,Brasília,-15.8267,-47.9218
+Argentina,C1001,Buenos Aires,-34.6118,-58.3960
+Chile,7500000,Santiago,-33.4489,-70.6693
+Uruguay,11000,Montevideo,-34.9011,-56.1645
+Colombia,110111,Bogotá,4.7110,-74.0721
+Peru,15001,Lima,-12.0464,-77.0428
+Ecuador,170143,Quito,-0.1807,-78.4678
+Venezuela,1000,Caracas,10.4806,-66.9036
+Mexico,28001,Mexico City,19.4326,-99.1332
+Guatemala,01000,Guatemala City,14.6349,-90.5069
+Costa Rica,10101,San José,9.9281,-84.0907

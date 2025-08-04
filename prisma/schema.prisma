@@ -1,0 +1,284 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  DONOR
+  BUYER
+  ADMIN
+}
+
+enum Gender {
+  BOY
+  GIRL
+  OTHER
+}
+
+enum FeedType {
+  BREAST
+  BOTTLE
+  OTHER
+}
+
+enum Position {
+  LEFT
+  RIGHT
+  BOTH
+}
+
+enum DiaperType {
+  SOLID
+  LIQUID
+  BOTH
+}
+
+enum SleepLocation {
+  CRIB
+  BED
+  STROLLER
+  OTHER
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  COMPLETED
+  CANCELLED
+}
+
+enum RequestType {
+  MILK_REQUEST
+  MILK_OFFER
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  phone     String
+  zipcode   String
+  userType  UserType
+  
+  // Authentication fields
+  isNew           Boolean  @default(true)
+  isActive        Boolean  @default(true)
+  fcmToken        String?
+  lastLoginAt     DateTime?
+  
+  // Donor specific fields (optional for other user types)
+  description            String?
+  bloodGroup            String?
+  babyDeliveryDate      DateTime?
+  healthStyle           String?  // JSON string array
+  ableToShareMedicalRecord Boolean? @default(false)
+  isAvailable           Boolean? @default(true) // For donors - availability status
+  
+  // Relationships
+  babies    Baby[]
+  otpVerifications OtpVerification[]
+  
+  // Request relationships
+  sentRequests     MilkRequest[] @relation("RequesterUser")
+  receivedRequests MilkRequest[] @relation("DonorUser")
+  notifications    RequestNotification[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Baby {
+  id           Int      @id @default(autoincrement())
+  name         String
+  gender       Gender
+  deliveryDate DateTime
+  bloodGroup   String?
+  weight       Float?   // in kg
+  height       Float?   // in cm
+  
+  // Relationships
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Log relationships
+  feedLogs     FeedLog[]
+  diaperLogs   DiaperLog[]
+  sleepLogs    SleepLog[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("babies")
+}
+
+model FeedLog {
+  id          Int      @id @default(autoincrement())
+  feedingDate DateTime
+  startTime   DateTime
+  endTime     DateTime
+  feedType    FeedType
+  position    Position?
+  amount      Float?   // in ml or oz
+  note        String?
+  
+  // Relationships
+  babyId      Int
+  baby        Baby     @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("feed_logs")
+}
+
+model DiaperLog {
+  id         Int        @id @default(autoincrement())
+  date       DateTime
+  time       DateTime
+  diaperType DiaperType
+  note       String?
+  
+  // Relationships
+  babyId     Int
+  baby       Baby       @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@map("diaper_logs")
+}
+
+model SleepLog {
+  id           Int           @id @default(autoincrement())
+  date         DateTime
+  startTime    DateTime
+  endTime      DateTime
+  sleepQuality String?
+  location     SleepLocation
+  note         String?
+  
+  // Relationships
+  babyId       Int
+  baby         Baby          @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("sleep_logs")
+}
+
+model OtpVerification {
+  id        Int      @id @default(autoincrement())
+  email     String
+  otp       String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  attempts  Int      @default(0)
+  
+  // Relationships
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("otp_verifications")
+}
+
+model ZipCode {
+  id          Int     @id @default(autoincrement())
+  country     String
+  zipcode     String  @unique
+  placeName   String
+  latitude    Float
+  longitude   Float
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("zip_codes")
+  @@index([country, zipcode])
+  @@index([latitude, longitude])
+}
+
+model MilkRequest {
+  id          Int           @id @default(autoincrement())
+  requestType RequestType   @default(MILK_REQUEST)
+  status      RequestStatus @default(PENDING)
+  
+  // Request details
+  title       String
+  description String?
+  quantity    Float?        // in ml or other unit
+  urgency     String?       // LOW, MEDIUM, HIGH
+  
+  // Requester details
+  requesterId Int
+  requester   User          @relation("RequesterUser", fields: [requesterId], references: [id], onDelete: Cascade)
+  
+  // Donor details (when accepted)
+  donorId     Int?
+  donor       User?         @relation("DonorUser", fields: [donorId], references: [id], onDelete: SetNull)
+  
+  // Location and distance
+  requesterZipcode String
+  donorZipcode     String?
+  distance         Float?    // in km
+  
+  // Timing
+  neededBy    DateTime?
+  acceptedAt  DateTime?
+  completedAt DateTime?
+  
+  // Additional fields
+  notes       String?
+  
+  // Relations
+  notifications RequestNotification[]
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("milk_requests")
+  @@index([status, requestType])
+  @@index([requesterId])
+  @@index([donorId])
+  @@index([requesterZipcode])
+}
+
+model RequestNotification {
+  id          Int      @id @default(autoincrement())
+  
+  // Notification details
+  title       String
+  message     String
+  type        String   // AVAILABILITY_UPDATE, REQUEST_ACCEPTED, etc.
+  
+  // User details
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Related request
+  requestId   Int?
+  request     MilkRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  
+  // Status
+  isRead      Boolean  @default(false)
+  sentAt      DateTime @default(now())
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("request_notifications")
+  @@index([userId, isRead])
+}

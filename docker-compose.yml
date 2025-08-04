@@ -1,0 +1,90 @@
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: moms_milk_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-moms_milk}
+      MYSQL_USER: ${MYSQL_USER:-app_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-app_password}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - moms_milk_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-password123}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    command: --default-authentication-plugin=mysql_native_password
+
+  # NestJS API
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: development
+    container_name: moms_milk_api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${PORT:-3000}
+      DATABASE_URL: "mysql://root:${MYSQL_ROOT_PASSWORD:-password123}@mysql:3306/${MYSQL_DATABASE:-moms_milk}"
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
+      DEFAULT_OTP: ${DEFAULT_OTP:-759409}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+      - ./src/data:/usr/src/app/src/data
+    networks:
+      - moms_milk_network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Setting up database...' &&
+        npx prisma generate &&
+        npx prisma db push &&
+        echo 'Database setup complete. Starting application...' &&
+        npm run start:dev
+      "
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Adminer (Database Management UI) - Optional
+  adminer:
+    image: adminer:4.8.1
+    container_name: moms_milk_adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    networks:
+      - moms_milk_network
+    depends_on:
+      - mysql
+    profiles:
+      - tools
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  moms_milk_network:
+    driver: bridge

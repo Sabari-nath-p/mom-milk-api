@@ -1,0 +1,31 @@
+# Docker Compose override for local production testing
+# Use: docker-compose -f docker-compose.prod.yml -f docker-compose.override.yml up
+
+services:
+  # Enable nginx for local testing
+  nginx:
+    profiles: []  # Remove profile restriction
+    ports:
+      - "8080:8080"  # HTTP port for local testing
+
+  # Expose MySQL port for debugging (remove in actual production)
+  mysql:
+    ports:
+      - "3306:3306"
+
+  # Reduce resource limits for local testing
+  api:
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  mysql:
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
