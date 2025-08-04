@@ -2,6 +2,7 @@
 
 # Quick deployment script for Mom's Milk API
 # Usage: curl -fsSL https://raw.githubusercontent.com/your-username/moms_milk_api/main/quick-deploy.sh | bash
+# Run as regular user with sudo privileges (NOT as root)
 
 set -e
 
@@ -11,6 +12,19 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
+
+# Security check - don't run as root
+if [ "$EUID" -eq 0 ]; then
+    echo -e "${RED}[ERROR] This script should not be run as root for security reasons!${NC}"
+    echo -e "${RED}Please run as a regular user with sudo privileges${NC}"
+    echo -e "${YELLOW}Example setup:${NC}"
+    echo "  sudo adduser deploy"
+    echo "  sudo usermod -aG sudo deploy"
+    echo "  sudo usermod -aG docker deploy"
+    echo "  su - deploy"
+    echo "  ./quick-deploy.sh"
+    exit 1
+fi
 
 echo -e "${BLUE}"
 echo "╔══════════════════════════════════════════════════════════════════╗"

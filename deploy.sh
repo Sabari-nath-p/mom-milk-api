@@ -2,6 +2,7 @@
 
 # Auto-deployment script for Mom's Milk API on Hostinger VPS
 # This script handles the complete deployment process
+# Run as regular user with sudo privileges (NOT as root)
 
 set -e
 
@@ -14,10 +15,10 @@ NC='\033[0m' # No Color
 
 # Configuration
 PROJECT_NAME="moms_milk_api"
-REPO_URL="https://github.com/Sabari-nath-p/mom-milk-api.git"  # Update this
+REPO_URL="https://github.com/Sabari-nath-p/mom-milk-api.git"
 DEPLOY_DIR="/opt/${PROJECT_NAME}"
 BACKUP_DIR="/opt/${PROJECT_NAME}_backups"
-ENV_FILE=".env.production"
+ENV_FILE=".env"
 
 # Functions
 log_info() {
@@ -34,6 +35,41 @@ log_warning() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+check_user_privileges() {
+    log_info "Checking user privileges..."
+    
+    # Check if running as root (security risk)
+    if [ "$EUID" -eq 0 ]; then
+        log_error "This script should not be run as root for security reasons!"
+        log_error "Please run as a regular user with sudo privileges:"
+        log_error "  1. Create a user: sudo adduser deploy"
+        log_error "  2. Add to sudo group: sudo usermod -aG sudo deploy"
+        log_error "  3. Add to docker group: sudo usermod -aG docker deploy"
+        log_error "  4. Switch user: su - deploy"
+        log_error "  5. Run this script: ./deploy.sh"
+        exit 1
+    fi
+    
+    # Check if user has sudo privileges
+    if ! sudo -n true 2>/dev/null; then
+        log_error "This script requires sudo privileges"
+        log_error "Please ensure your user is in the sudo group"
+        log_error "Run: sudo usermod -aG sudo \$USER"
+        exit 1
+    fi
+    
+    # Check if user is in docker group
+    if ! groups | grep -q docker; then
+        log_warning "User is not in docker group. Adding..."
+        sudo usermod -aG docker $USER
+        log_warning "Please log out and log back in for docker group changes to take effect"
+        log_warning "Then run this script again"
+        exit 1
+    fi
+    
+    log_success "User privileges verified"
 }
 
 check_requirements() {
@@ -101,6 +137,9 @@ clone_or_update_repo() {
         cd "$DEPLOY_DIR"
     fi
     
+    # Ensure proper ownership
+    sudo chown -R $USER:$USER "$DEPLOY_DIR"
+    
     log_success "Repository ready"
 }
 
@@ -113,12 +152,15 @@ setup_environment() {
         
         log_warning "IMPORTANT: Please edit $DEPLOY_DIR/$ENV_FILE with your production values:"
         log_warning "- Change MYSQL_ROOT_PASSWORD"
-        log_warning "- Change MYSQL_PASSWORD"
+        log_warning "- Change MYSQL_PASSWORD"  
         log_warning "- Change JWT_SECRET"
+        log_warning "- Set NODE_ENV=production"
         log_warning "- Update SMTP settings"
         log_warning "- Update CORS_ORIGIN with your domain"
         
-        read -p "Press enter after editing the environment file..."
+        # Open editor for user to edit environment file
+        read -p "Press enter to edit the environment file (nano will open)..."
+        nano "$DEPLOY_DIR/$ENV_FILE"
     fi
     
     log_success "Environment configuration ready"
@@ -240,6 +282,7 @@ display_info() {
 main() {
     log_info "Starting Mom's Milk API deployment on Hostinger VPS..."
     
+    check_user_privileges
     check_requirements
     setup_firewall
     clone_or_update_repo
