@@ -42,7 +42,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
     ports:
       - "${API_PORT:-3001}:3000"
-      - "9229:9229" # Debug port
+      - "9230:9229" # Debug port (changed to avoid conflict)
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
