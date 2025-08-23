@@ -19,8 +19,8 @@ export declare class RequestController {
         data: {
             distance: number;
             id: number;
-            requestType: import(".prisma/client").RequestType;
-            status: import(".prisma/client").RequestStatus;
+            requestType: import("../dto/request.dto").RequestType;
+            status: import("../dto/request.dto").RequestStatus;
             title: string;
             description?: string;
             quantity?: number;
@@ -37,13 +37,13 @@ export declare class RequestController {
                 id: number;
                 name: string;
                 email: string;
-                userType: import(".prisma/client").UserType;
+                userType: import("../dto/request.dto").UserType;
             };
             donor?: {
                 id: number;
                 name: string;
                 email: string;
-                userType: import(".prisma/client").UserType;
+                userType: import("../dto/request.dto").UserType;
             };
         }[];
         pagination: {

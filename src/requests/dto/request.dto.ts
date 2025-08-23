@@ -1,26 +1,25 @@
 import { IsString, IsOptional, IsNumber, IsEnum, IsBoolean, IsDateString, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-// import { RequestStatus, RequestType, UserType } from '@prisma/client';
 
-// Temporary workaround for enum types
-enum RequestStatus {
+// Define enums that match the Prisma schema
+export enum UserType {
+    DONOR = 'DONOR',
+    BUYER = 'BUYER',
+    ADMIN = 'ADMIN'
+}
+
+export enum RequestStatus {
     PENDING = 'PENDING',
     ACCEPTED = 'ACCEPTED',
-    REJECTED = 'REJECTED',
-    CANCELLED = 'CANCELLED',
-    COMPLETED = 'COMPLETED'
+    DECLINED = 'DECLINED',
+    COMPLETED = 'COMPLETED',
+    CANCELLED = 'CANCELLED'
 }
 
-enum RequestType {
+export enum RequestType {
     MILK_REQUEST = 'MILK_REQUEST',
-    DONOR_OFFERING = 'DONOR_OFFERING'
-}
-
-enum UserType {
-    MOTHER = 'MOTHER',
-    DONOR = 'DONOR',
-    ADMIN = 'ADMIN'
+    MILK_OFFER = 'MILK_OFFER'
 }
 
 export class CreateZipCodeDto {

@@ -1,7 +1,6 @@
 import { PrismaService } from '../../prisma/prisma.service';
 import { GeolocationService } from './geolocation.service';
 import { CreateMilkRequestDto, UpdateMilkRequestDto, AcceptRequestDto, UpdateAvailabilityDto, DonorSearchFiltersDto, RequestFiltersDto, DonorSearchResultDto, MilkRequestResponseDto, NotificationDto } from '../dto/request.dto';
-import { RequestStatus, RequestType, UserType } from '@prisma/client';
 export declare class RequestService {
     private prisma;
     private geolocationService;
@@ -22,8 +21,8 @@ export declare class RequestService {
         data: {
             distance: number;
             id: number;
-            requestType: RequestType;
-            status: RequestStatus;
+            requestType: import("../dto/request.dto").RequestType;
+            status: import("../dto/request.dto").RequestStatus;
             title: string;
             description?: string;
             quantity?: number;
@@ -40,13 +39,13 @@ export declare class RequestService {
                 id: number;
                 name: string;
                 email: string;
-                userType: UserType;
+                userType: import("../dto/request.dto").UserType;
             };
             donor?: {
                 id: number;
                 name: string;
                 email: string;
-                userType: UserType;
+                userType: import("../dto/request.dto").UserType;
             };
         }[];
         pagination: {

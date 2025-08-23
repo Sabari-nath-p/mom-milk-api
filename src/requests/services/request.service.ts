@@ -430,7 +430,7 @@ export class RequestService {
                         name: donor.name,
                         email: donor.email,
                         zipcode: donor.zipcode,
-                        userType: donor.userType,
+                        userType: donor.userType as any, // Type assertion to handle Prisma vs DTO enum mismatch
                         description: donor.description,
                         bloodGroup: donor.bloodGroup,
                         babyDeliveryDate: donor.babyDeliveryDate,

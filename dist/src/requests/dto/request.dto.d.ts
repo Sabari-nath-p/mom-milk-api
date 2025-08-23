@@ -1,18 +1,18 @@
-declare enum RequestStatus {
+export declare enum UserType {
+    DONOR = "DONOR",
+    BUYER = "BUYER",
+    ADMIN = "ADMIN"
+}
+export declare enum RequestStatus {
     PENDING = "PENDING",
     ACCEPTED = "ACCEPTED",
-    REJECTED = "REJECTED",
-    CANCELLED = "CANCELLED",
-    COMPLETED = "COMPLETED"
+    DECLINED = "DECLINED",
+    COMPLETED = "COMPLETED",
+    CANCELLED = "CANCELLED"
 }
-declare enum RequestType {
+export declare enum RequestType {
     MILK_REQUEST = "MILK_REQUEST",
-    DONOR_OFFERING = "DONOR_OFFERING"
-}
-declare enum UserType {
-    MOTHER = "MOTHER",
-    DONOR = "DONOR",
-    ADMIN = "ADMIN"
+    MILK_OFFER = "MILK_OFFER"
 }
 export declare class CreateZipCodeDto {
     country: string;

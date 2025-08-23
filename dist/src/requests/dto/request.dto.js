@@ -9,29 +9,29 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NotificationDto = exports.MilkRequestResponseDto = exports.DonorSearchResultDto = exports.RequestFiltersDto = exports.DonorSearchFiltersDto = exports.UpdateAvailabilityDto = exports.AcceptRequestDto = exports.UpdateMilkRequestDto = exports.CreateMilkRequestDto = exports.UpdateZipCodeDto = exports.CreateZipCodeDto = void 0;
+exports.NotificationDto = exports.MilkRequestResponseDto = exports.DonorSearchResultDto = exports.RequestFiltersDto = exports.DonorSearchFiltersDto = exports.UpdateAvailabilityDto = exports.AcceptRequestDto = exports.UpdateMilkRequestDto = exports.CreateMilkRequestDto = exports.UpdateZipCodeDto = exports.CreateZipCodeDto = exports.RequestType = exports.RequestStatus = exports.UserType = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
+var UserType;
+(function (UserType) {
+    UserType["DONOR"] = "DONOR";
+    UserType["BUYER"] = "BUYER";
+    UserType["ADMIN"] = "ADMIN";
+})(UserType || (exports.UserType = UserType = {}));
 var RequestStatus;
 (function (RequestStatus) {
     RequestStatus["PENDING"] = "PENDING";
     RequestStatus["ACCEPTED"] = "ACCEPTED";
-    RequestStatus["REJECTED"] = "REJECTED";
-    RequestStatus["CANCELLED"] = "CANCELLED";
+    RequestStatus["DECLINED"] = "DECLINED";
     RequestStatus["COMPLETED"] = "COMPLETED";
-})(RequestStatus || (RequestStatus = {}));
+    RequestStatus["CANCELLED"] = "CANCELLED";
+})(RequestStatus || (exports.RequestStatus = RequestStatus = {}));
 var RequestType;
 (function (RequestType) {
     RequestType["MILK_REQUEST"] = "MILK_REQUEST";
-    RequestType["DONOR_OFFERING"] = "DONOR_OFFERING";
-})(RequestType || (RequestType = {}));
-var UserType;
-(function (UserType) {
-    UserType["MOTHER"] = "MOTHER";
-    UserType["DONOR"] = "DONOR";
-    UserType["ADMIN"] = "ADMIN";
-})(UserType || (UserType = {}));
+    RequestType["MILK_OFFER"] = "MILK_OFFER";
+})(RequestType || (exports.RequestType = RequestType = {}));
 class CreateZipCodeDto {
 }
 exports.CreateZipCodeDto = CreateZipCodeDto;
