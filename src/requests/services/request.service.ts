@@ -332,6 +332,9 @@ export class RequestService {
             throw new NotFoundException('Requester not found');
         }
 
+        // Use provided zipcode parameter or fall back to requester's zipcode
+        const referenceZipcode = filterOptions.zipcode || requester.zipcode;
+
         // Base where clause for all donors
         const baseWhereClause: any = {
             userType: UserType.DONOR,
@@ -351,108 +354,18 @@ export class RequestService {
             baseWhereClause.bloodGroup = filterOptions.bloodGroup;
         }
 
-        // Add zipcode filter if provided (overrides distance-based search)
-        if (filterOptions.zipcode) {
-            baseWhereClause.zipcode = filterOptions.zipcode;
-        }
+        // Remove zipcode filter from base where clause since we'll handle distance-based search differently
+        // Don't filter by zipcode in the database query - we'll sort all donors by distance instead
 
         // Add donor name search if provided
         if (filterOptions.donorName) {
+            // For MySQL, use contains without mode for case-insensitive search
             baseWhereClause.name = {
-                contains: filterOptions.donorName,
-                mode: 'insensitive'
+                contains: filterOptions.donorName
             };
         }
 
-        // If specific zipcode filter is provided, use simple search
-        if (filterOptions.zipcode) {
-            const [donors, total] = await Promise.all([
-                this.prisma.user.findMany({
-                    where: baseWhereClause,
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        zipcode: true,
-                        userType: true,
-                        description: true,
-                        bloodGroup: true,
-                        babyDeliveryDate: true,
-                        ableToShareMedicalRecord: true,
-                        isAvailable: true,
-                        createdAt: true,
-                        receivedRequests: {
-                            where: {
-                                requesterId: requesterId,
-                                status: RequestStatus.ACCEPTED,
-                            },
-                            select: { id: true },
-                        },
-                    },
-                    skip,
-                    take: limit,
-                }),
-                this.prisma.user.count({ where: baseWhereClause }),
-            ]);
-
-            // Calculate distances and format response
-            const donorsWithDistance: DonorSearchResultDto[] = await Promise.all(
-                donors.map(async (donor) => {
-                    const distance = await this.calculateRequestDistance(requester.zipcode, donor.zipcode);
-                    const zipCodeData = await this.geolocationService.getZipCodeCoordinates(donor.zipcode);
-
-                    // Format distance text for better UX
-                    const distanceText = distance ?
-                        (distance < 1 ?
-                            `${Math.round(distance * 1000)}m away` :
-                            `${distance.toFixed(1)} km away`
-                        ) : 'Distance unknown';
-
-                    // Build full address string (no state in your data)
-                    const fullAddress = zipCodeData ? [
-                        zipCodeData.placeName,
-                        zipCodeData.country
-                    ].filter(Boolean).join(', ') : 'Unknown location';
-
-                    return {
-                        donor: {
-                            id: donor.id,
-                            name: donor.name,
-                            email: donor.email,
-                            zipcode: donor.zipcode,
-                            userType: donor.userType as any,
-                            description: donor.description,
-                            bloodGroup: donor.bloodGroup,
-                            babyDeliveryDate: donor.babyDeliveryDate,
-                            ableToShareMedicalRecord: donor.ableToShareMedicalRecord,
-                            isAvailable: donor.isAvailable,
-                            createdAt: donor.createdAt,
-                        },
-                        distance: distance || 0,
-                        distanceText,
-                        hasAcceptedRequest: donor.receivedRequests.length > 0,
-                        location: {
-                            zipcode: donor.zipcode,
-                            placeName: zipCodeData?.placeName || 'Unknown',
-                            country: zipCodeData?.country || 'Unknown',
-                            latitude: zipCodeData?.latitude || 0,
-                            longitude: zipCodeData?.longitude || 0,
-                            fullAddress,
-                        },
-                    };
-                })
-            );
-
-            // Sort by distance
-            donorsWithDistance.sort((a, b) => a.distance - b.distance);
-
-            return {
-                data: donorsWithDistance,
-                pagination: this.createPaginationResponse(page, limit, total),
-            };
-        }
-
-        // For distance-based search, get ALL donors and filter by distance
+        // Get ALL donors and calculate distances from the reference zipcode
         const allDonors = await this.prisma.user.findMany({
             where: baseWhereClause,
             select: {
@@ -477,20 +390,21 @@ export class RequestService {
             },
         });
 
-        // Calculate distances for all donors and filter by maxDistance
+        // Calculate distances for all donors and filter by maxDistance (only if no specific zipcode filter)
         const donorsWithDistance: DonorSearchResultDto[] = [];
 
         for (const donor of allDonors) {
-            const distance = await this.calculateRequestDistance(requester.zipcode, donor.zipcode);
+            const distance = await this.calculateRequestDistance(referenceZipcode, donor.zipcode);
 
             // Include donor if:
-            // 1. Distance is calculated and within maxDistance, OR
-            // 2. Distance cannot be calculated (zipcode not in database) - we include them but show "Distance unknown"
-            if (!distance || distance <= maxDistance) {
+            // 1. Specific zipcode filter is provided (include all), OR
+            // 2. Distance is calculated (including 0) and within maxDistance, OR  
+            // 3. Distance cannot be calculated (zipcode not in database) - we include them but show "Distance unknown"
+            if (filterOptions.zipcode || distance === null || distance <= maxDistance) {
                 const zipCodeData = await this.geolocationService.getZipCodeCoordinates(donor.zipcode);
 
                 // Format distance text for better UX
-                const distanceText = distance ?
+                const distanceText = distance !== null ?
                     (distance < 1 ?
                         `${Math.round(distance * 1000)}m away` :
                         `${distance.toFixed(1)} km away`
@@ -516,7 +430,7 @@ export class RequestService {
                         isAvailable: donor.isAvailable,
                         createdAt: donor.createdAt,
                     },
-                    distance: distance || 999999, // Put unknown distances at the end
+                    distance: distance !== null ? distance : 999999, // Put unknown distances at the end
                     distanceText,
                     hasAcceptedRequest: donor.receivedRequests.length > 0,
                     location: {
@@ -531,11 +445,26 @@ export class RequestService {
             }
         }
 
-        // Sort by distance (known distances first, then unknown)
+        // Sort by distance in this order:
+        // 1. Same zipcode (distance = 0) first
+        // 2. Known distances (sorted by distance)
+        // 3. Unknown distances last
         donorsWithDistance.sort((a, b) => {
+            // Both have unknown distance
             if (a.distance === 999999 && b.distance === 999999) return 0;
+            
+            // One has unknown distance - put it last
             if (a.distance === 999999) return 1;
             if (b.distance === 999999) return -1;
+            
+            // Both have same zipcode (distance = 0) - maintain order
+            if (a.distance === 0 && b.distance === 0) return 0;
+            
+            // One has same zipcode - put it first
+            if (a.distance === 0) return -1;
+            if (b.distance === 0) return 1;
+            
+            // Both have known distances - sort by distance
             return a.distance - b.distance;
         });
 

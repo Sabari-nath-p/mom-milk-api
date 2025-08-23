@@ -77,16 +77,16 @@ export declare class RequestController {
         };
     }>;
     markNotificationAsRead(req: any, notificationId: number): Promise<{
+        id: number;
+        title: string;
         createdAt: Date;
         updatedAt: Date;
-        id: number;
-        userId: number;
-        type: string;
-        title: string;
         message: string;
+        type: string;
+        userId: number;
+        requestId: number | null;
         isRead: boolean;
         sentAt: Date;
-        requestId: number | null;
     }>;
     markAllNotificationsAsRead(req: any): Promise<import(".prisma/client").Prisma.BatchPayload>;
     getRequestDetails(req: any, id: number): Promise<MilkRequestResponseDto>;

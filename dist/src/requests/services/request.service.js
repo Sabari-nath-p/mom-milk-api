@@ -286,6 +286,7 @@ let RequestService = class RequestService {
         if (!requester) {
             throw new common_1.NotFoundException('Requester not found');
         }
+        const referenceZipcode = filterOptions.zipcode || requester.zipcode;
         const baseWhereClause = {
             userType: client_1.UserType.DONOR,
             isActive: true,
@@ -299,86 +300,9 @@ let RequestService = class RequestService {
         if (filterOptions.bloodGroup) {
             baseWhereClause.bloodGroup = filterOptions.bloodGroup;
         }
-        if (filterOptions.zipcode) {
-            baseWhereClause.zipcode = filterOptions.zipcode;
-        }
         if (filterOptions.donorName) {
             baseWhereClause.name = {
-                contains: filterOptions.donorName,
-                mode: 'insensitive'
-            };
-        }
-        if (filterOptions.zipcode) {
-            const [donors, total] = await Promise.all([
-                this.prisma.user.findMany({
-                    where: baseWhereClause,
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        zipcode: true,
-                        userType: true,
-                        description: true,
-                        bloodGroup: true,
-                        babyDeliveryDate: true,
-                        ableToShareMedicalRecord: true,
-                        isAvailable: true,
-                        createdAt: true,
-                        receivedRequests: {
-                            where: {
-                                requesterId: requesterId,
-                                status: client_1.RequestStatus.ACCEPTED,
-                            },
-                            select: { id: true },
-                        },
-                    },
-                    skip,
-                    take: limit,
-                }),
-                this.prisma.user.count({ where: baseWhereClause }),
-            ]);
-            const donorsWithDistance = await Promise.all(donors.map(async (donor) => {
-                const distance = await this.calculateRequestDistance(requester.zipcode, donor.zipcode);
-                const zipCodeData = await this.geolocationService.getZipCodeCoordinates(donor.zipcode);
-                const distanceText = distance ?
-                    (distance < 1 ?
-                        `${Math.round(distance * 1000)}m away` :
-                        `${distance.toFixed(1)} km away`) : 'Distance unknown';
-                const fullAddress = zipCodeData ? [
-                    zipCodeData.placeName,
-                    zipCodeData.country
-                ].filter(Boolean).join(', ') : 'Unknown location';
-                return {
-                    donor: {
-                        id: donor.id,
-                        name: donor.name,
-                        email: donor.email,
-                        zipcode: donor.zipcode,
-                        userType: donor.userType,
-                        description: donor.description,
-                        bloodGroup: donor.bloodGroup,
-                        babyDeliveryDate: donor.babyDeliveryDate,
-                        ableToShareMedicalRecord: donor.ableToShareMedicalRecord,
-                        isAvailable: donor.isAvailable,
-                        createdAt: donor.createdAt,
-                    },
-                    distance: distance || 0,
-                    distanceText,
-                    hasAcceptedRequest: donor.receivedRequests.length > 0,
-                    location: {
-                        zipcode: donor.zipcode,
-                        placeName: zipCodeData?.placeName || 'Unknown',
-                        country: zipCodeData?.country || 'Unknown',
-                        latitude: zipCodeData?.latitude || 0,
-                        longitude: zipCodeData?.longitude || 0,
-                        fullAddress,
-                    },
-                };
-            }));
-            donorsWithDistance.sort((a, b) => a.distance - b.distance);
-            return {
-                data: donorsWithDistance,
-                pagination: this.createPaginationResponse(page, limit, total),
+                contains: filterOptions.donorName
             };
         }
         const allDonors = await this.prisma.user.findMany({
@@ -406,10 +330,10 @@ let RequestService = class RequestService {
         });
         const donorsWithDistance = [];
         for (const donor of allDonors) {
-            const distance = await this.calculateRequestDistance(requester.zipcode, donor.zipcode);
-            if (!distance || distance <= maxDistance) {
+            const distance = await this.calculateRequestDistance(referenceZipcode, donor.zipcode);
+            if (filterOptions.zipcode || distance === null || distance <= maxDistance) {
                 const zipCodeData = await this.geolocationService.getZipCodeCoordinates(donor.zipcode);
-                const distanceText = distance ?
+                const distanceText = distance !== null ?
                     (distance < 1 ?
                         `${Math.round(distance * 1000)}m away` :
                         `${distance.toFixed(1)} km away`) : 'Distance unknown';
@@ -431,7 +355,7 @@ let RequestService = class RequestService {
                         isAvailable: donor.isAvailable,
                         createdAt: donor.createdAt,
                     },
-                    distance: distance || 999999,
+                    distance: distance !== null ? distance : 999999,
                     distanceText,
                     hasAcceptedRequest: donor.receivedRequests.length > 0,
                     location: {
@@ -452,6 +376,12 @@ let RequestService = class RequestService {
                 return 1;
             if (b.distance === 999999)
                 return -1;
+            if (a.distance === 0 && b.distance === 0)
+                return 0;
+            if (a.distance === 0)
+                return -1;
+            if (b.distance === 0)
+                return 1;
             return a.distance - b.distance;
         });
         const total = donorsWithDistance.length;
