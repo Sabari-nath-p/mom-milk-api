@@ -31,7 +31,7 @@ export class StartupService implements OnModuleInit {
             return;
         }
 
-        // Look for CSV files in the data directory
+        // Look for files in the data directory (Excel first, then CSV)
         const dataDir = path.join(process.cwd(), 'src', 'data');
 
         if (!fs.existsSync(dataDir)) {
@@ -39,17 +39,30 @@ export class StartupService implements OnModuleInit {
             return;
         }
 
+        // Look for Excel files first
+        const excelFiles = fs.readdirSync(dataDir).filter(file =>
+            (file.endsWith('.xlsx') || file.endsWith('.xls')) && file.toLowerCase().includes('zipcode')
+        );
+
+        if (excelFiles.length > 0) {
+            const excelFilePath = path.join(dataDir, excelFiles[0]);
+            this.logger.log(`Found zipcode Excel file: ${excelFiles[0]}`);
+            await this.importFile(excelFilePath);
+            return;
+        }
+
+        // Fallback to CSV files
         const csvFiles = fs.readdirSync(dataDir).filter(file =>
             file.endsWith('.csv') && file.toLowerCase().includes('zipcode')
         );
 
         if (csvFiles.length === 0) {
-            this.logger.warn('No zipcode CSV files found in data directory. Using sample data.');
+            this.logger.warn('No zipcode files found in data directory. Using sample data.');
 
             // Import sample data
             const sampleCsvPath = path.join(dataDir, 'sample_zipcodes.csv');
             if (fs.existsSync(sampleCsvPath)) {
-                await this.importCsvFile(sampleCsvPath);
+                await this.importFile(sampleCsvPath);
             } else {
                 this.logger.warn('Sample zipcode file not found. Skipping import.');
             }
@@ -60,10 +73,10 @@ export class StartupService implements OnModuleInit {
         const csvFilePath = path.join(dataDir, csvFiles[0]);
         this.logger.log(`Found zipcode CSV file: ${csvFiles[0]}`);
 
-        await this.importCsvFile(csvFilePath);
+        await this.importFile(csvFilePath);
     }
 
-    private async importCsvFile(filePath: string) {
+    private async importFile(filePath: string) {
         try {
             this.logger.log(`Starting import from: ${path.basename(filePath)}`);
 
@@ -105,7 +118,7 @@ export class StartupService implements OnModuleInit {
         // Note: This would need a method in GeolocationService to clear all data
         // For now, we'll just import and let duplicates be handled by unique constraints
 
-        await this.importCsvFile(csvFilePath);
+        await this.importFile(csvFilePath);
         return { message: 'Zipcode import completed successfully' };
     }
 }

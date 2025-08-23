@@ -6,7 +6,7 @@ export declare class StartupService implements OnModuleInit {
     constructor(geolocationService: GeolocationService);
     onModuleInit(): Promise<void>;
     private importZipCodesOnStartup;
-    private importCsvFile;
+    private importFile;
     forceImportZipCodes(csvFileName?: string): Promise<{
         message: string;
     }>;

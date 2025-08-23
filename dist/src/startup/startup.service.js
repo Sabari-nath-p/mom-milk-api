@@ -42,12 +42,19 @@ let StartupService = StartupService_1 = class StartupService {
             this.logger.warn('Data directory not found. Skipping zipcode import.');
             return;
         }
+        const excelFiles = fs.readdirSync(dataDir).filter(file => (file.endsWith('.xlsx') || file.endsWith('.xls')) && file.toLowerCase().includes('zipcode'));
+        if (excelFiles.length > 0) {
+            const excelFilePath = path.join(dataDir, excelFiles[0]);
+            this.logger.log(`Found zipcode Excel file: ${excelFiles[0]}`);
+            await this.importFile(excelFilePath);
+            return;
+        }
         const csvFiles = fs.readdirSync(dataDir).filter(file => file.endsWith('.csv') && file.toLowerCase().includes('zipcode'));
         if (csvFiles.length === 0) {
-            this.logger.warn('No zipcode CSV files found in data directory. Using sample data.');
+            this.logger.warn('No zipcode files found in data directory. Using sample data.');
             const sampleCsvPath = path.join(dataDir, 'sample_zipcodes.csv');
             if (fs.existsSync(sampleCsvPath)) {
-                await this.importCsvFile(sampleCsvPath);
+                await this.importFile(sampleCsvPath);
             }
             else {
                 this.logger.warn('Sample zipcode file not found. Skipping import.');
@@ -56,9 +63,9 @@ let StartupService = StartupService_1 = class StartupService {
         }
         const csvFilePath = path.join(dataDir, csvFiles[0]);
         this.logger.log(`Found zipcode CSV file: ${csvFiles[0]}`);
-        await this.importCsvFile(csvFilePath);
+        await this.importFile(csvFilePath);
     }
-    async importCsvFile(filePath) {
+    async importFile(filePath) {
         try {
             this.logger.log(`Starting import from: ${path.basename(filePath)}`);
             const result = await this.geolocationService.importZipCodesFromFile(filePath);
@@ -88,7 +95,7 @@ let StartupService = StartupService_1 = class StartupService {
             }
         }
         this.logger.log('Clearing existing zipcode data...');
-        await this.importCsvFile(csvFilePath);
+        await this.importFile(csvFilePath);
         return { message: 'Zipcode import completed successfully' };
     }
 };

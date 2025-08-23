@@ -117,12 +117,26 @@ export class GeolocationController {
     @ApiBearerAuth()
     @Post('zipcodes/import')
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Import zipcodes from CSV file (Admin only)' })
+    @ApiOperation({ summary: 'Import zipcodes from Excel (.xlsx) file (Admin only) - Clears existing data' })
     @ApiResponse({ status: 200, description: 'Import completed' })
     @ApiResponse({ status: 400, description: 'File not found or invalid format' })
     async importZipCodes() {
-        const filePath = 'src/data/zipcodes.csv';
-        return this.geolocationService.importZipCodesFromFile(filePath);
+        // Look for Excel file first, then fallback to CSV
+        const excelFilePath = 'src/data/zipcodes.xlsx';
+        const csvFilePath = 'src/data/zipcodes.csv';
+        
+        const fs = require('fs');
+        let filePath = '';
+        
+        if (fs.existsSync(excelFilePath)) {
+            filePath = excelFilePath;
+        } else if (fs.existsSync(csvFilePath)) {
+            filePath = csvFilePath;
+        } else {
+            throw new Error('No zipcode file found. Please ensure zipcodes.xlsx or zipcodes.csv exists in src/data/ directory.');
+        }
+        
+        return this.geolocationService.importZipCodesFromFile(filePath, true); // true = clear existing data
     }
 
     @Get('distance/:zipcode1/:zipcode2')

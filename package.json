@@ -56,7 +56,8 @@
         "passport-jwt": "^4.0.1",
         "reflect-metadata": "^0.1.13",
         "rxjs": "^7.8.1",
-        "swagger-ui-express": "^5.0.0"
+        "swagger-ui-express": "^5.0.0",
+        "xlsx": "^0.18.5"
     },
     "devDependencies": {
         "@nestjs/cli": "^10.0.0",
@@ -68,6 +69,7 @@
         "@types/nodemailer": "^6.4.9",
         "@types/passport-jwt": "^3.0.9",
         "@types/supertest": "^2.0.12",
+        "@types/xlsx": "^0.0.35",
         "@typescript-eslint/eslint-plugin": "^6.0.0",
         "@typescript-eslint/parser": "^6.0.0",
         "csv-parser": "^3.0.0",

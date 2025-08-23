@@ -88,6 +88,7 @@ export declare class GeolocationController {
         imported: number;
         skipped: number;
         errors: number;
+        deleted?: number;
     }>;
     calculateDistance(zipcode1: string, zipcode2: string): Promise<{
         error: string;

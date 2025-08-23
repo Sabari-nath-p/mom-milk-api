@@ -45,8 +45,20 @@ let GeolocationController = class GeolocationController {
         return this.geolocationService.findNearbyZipCodes(zipcode, parseInt(radius));
     }
     async importZipCodes() {
-        const filePath = 'src/data/zipcodes.csv';
-        return this.geolocationService.importZipCodesFromFile(filePath);
+        const excelFilePath = 'src/data/zipcodes.xlsx';
+        const csvFilePath = 'src/data/zipcodes.csv';
+        const fs = require('fs');
+        let filePath = '';
+        if (fs.existsSync(excelFilePath)) {
+            filePath = excelFilePath;
+        }
+        else if (fs.existsSync(csvFilePath)) {
+            filePath = csvFilePath;
+        }
+        else {
+            throw new Error('No zipcode file found. Please ensure zipcodes.xlsx or zipcodes.csv exists in src/data/ directory.');
+        }
+        return this.geolocationService.importZipCodesFromFile(filePath, true);
     }
     async calculateDistance(zipcode1, zipcode2) {
         const coords1 = await this.geolocationService.getZipCodeCoordinates(zipcode1);
@@ -167,7 +179,7 @@ __decorate([
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Post)('zipcodes/import'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, swagger_1.ApiOperation)({ summary: 'Import zipcodes from CSV file (Admin only)' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Import zipcodes from Excel (.xlsx) file (Admin only) - Clears existing data' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Import completed' }),
     (0, swagger_1.ApiResponse)({ status: 400, description: 'File not found or invalid format' }),
     __metadata("design:type", Function),

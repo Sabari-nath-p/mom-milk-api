@@ -57,7 +57,7 @@ docker-compose exec api npm run prisma:migrate
 - **Request Types**: FRESH, FROZEN milk
 
 ### 🗺️ **Geolocation Features**
-- **Worldwide Zipcode Data** import from CSV
+- **Worldwide Zipcode Data** import from Excel (.xlsx) or CSV
 - **Haversine Distance** calculations
 - **Nearby Donor Search** with radius filtering
 - **Distance-based Sorting** (shortest to longest)
@@ -197,7 +197,7 @@ docker-compose up -d
 ### **Geolocation**
 - `GET /geolocation/nearby/:zipcode` - Find nearby zipcodes
 - `GET /geolocation/distance/:zip1/:zip2` - Calculate distance
-- `POST /geolocation/zipcodes/import` - Import zipcode data (admin)
+- `POST /geolocation/zipcodes/import` - Import zipcode data from Excel (.xlsx) or CSV (admin) **⚠️ Clears existing data**
 - `GET /geolocation/zipcodes` - List zipcodes (admin)
 
 ### **Baby Care**

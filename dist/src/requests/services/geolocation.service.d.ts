@@ -19,11 +19,13 @@ export declare class GeolocationService {
         country: string;
     } | null>;
     findNearbyZipCodes(centerZipcode: string, radiusKm: number): Promise<ZipCodeData[]>;
-    importZipCodesFromFile(filePath: string): Promise<{
+    importZipCodesFromFile(filePath: string, clearExisting?: boolean): Promise<{
         imported: number;
         skipped: number;
         errors: number;
+        deleted?: number;
     }>;
+    private importZipCodesFromCSV;
     autoImportZipCodes(): Promise<void>;
     createZipCode(createZipCodeDto: CreateZipCodeDto): Promise<{
         zipcode: string;

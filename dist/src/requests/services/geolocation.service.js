@@ -15,6 +15,7 @@ const prisma_service_1 = require("../../prisma/prisma.service");
 const fs = require("fs");
 const path = require("path");
 const csv = require("csv-parser");
+const XLSX = require("xlsx");
 let GeolocationService = class GeolocationService {
     constructor(prisma) {
         this.prisma = prisma;
@@ -71,7 +72,90 @@ let GeolocationService = class GeolocationService {
         });
         return nearbyZipCodes;
     }
-    async importZipCodesFromFile(filePath) {
+    async importZipCodesFromFile(filePath, clearExisting = true) {
+        let imported = 0;
+        let skipped = 0;
+        let errors = 0;
+        let deleted = 0;
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`File not found: ${filePath}`);
+        }
+        if (clearExisting) {
+            const clearResult = await this.clearAllZipCodes();
+            deleted = clearResult.deleted;
+            console.log(`Cleared ${deleted} existing zipcode records`);
+        }
+        const fileExtension = path.extname(filePath).toLowerCase();
+        const zipCodes = [];
+        if (fileExtension === '.xlsx' || fileExtension === '.xls') {
+            console.log('Processing Excel file:', filePath);
+            try {
+                const workbook = XLSX.readFile(filePath);
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                for (let i = 1; i < data.length; i++) {
+                    const row = data[i];
+                    try {
+                        if (!row || row.length === 0)
+                            continue;
+                        let country, zipcode, placeName, latitude, longitude;
+                        if (row.length >= 11) {
+                            country = row[0]?.toString().trim();
+                            zipcode = row[1]?.toString().trim();
+                            placeName = row[2]?.toString().trim();
+                            latitude = parseFloat(row[9]);
+                            longitude = parseFloat(row[10]);
+                        }
+                        else if (row.length >= 5) {
+                            country = row[0]?.toString().trim();
+                            zipcode = row[1]?.toString().trim();
+                            placeName = row[2]?.toString().trim();
+                            latitude = parseFloat(row[3]);
+                            longitude = parseFloat(row[4]);
+                        }
+                        if (country && zipcode && placeName && !isNaN(latitude) && !isNaN(longitude)) {
+                            zipCodes.push({
+                                country,
+                                zipcode,
+                                placeName,
+                                latitude,
+                                longitude,
+                            });
+                        }
+                        else {
+                            errors++;
+                            console.warn(`Invalid Excel row data at row ${i + 1}: Country="${country}", Zipcode="${zipcode}", Place="${placeName}", Lat=${latitude}, Lng=${longitude}`);
+                        }
+                    }
+                    catch (error) {
+                        errors++;
+                        console.error(`Error parsing Excel row ${i + 1}:`, error);
+                    }
+                }
+                for (const zipCodeData of zipCodes) {
+                    try {
+                        await this.createZipCode(zipCodeData);
+                        imported++;
+                    }
+                    catch (error) {
+                        skipped++;
+                    }
+                }
+                return { imported, skipped, errors, deleted };
+            }
+            catch (error) {
+                throw new Error(`Failed to process Excel file: ${error.message}`);
+            }
+        }
+        else if (fileExtension === '.csv') {
+            return this.importZipCodesFromCSV(filePath, clearExisting ? deleted : undefined);
+        }
+        else {
+            throw new Error(`Unsupported file format: ${fileExtension}. Please use .xlsx or .csv files.`);
+        }
+    }
+    async importZipCodesFromCSV(filePath, deletedCount) {
         let imported = 0;
         let skipped = 0;
         let errors = 0;
@@ -152,7 +236,7 @@ let GeolocationService = class GeolocationService {
                             skipped++;
                         }
                     }
-                    resolve({ imported, skipped, errors });
+                    resolve({ imported, skipped, errors, deleted: deletedCount });
                 }
                 catch (error) {
                     reject(error);
@@ -165,9 +249,19 @@ let GeolocationService = class GeolocationService {
     }
     async autoImportZipCodes() {
         try {
-            const zipCodeFilePath = path.join(process.cwd(), 'src', 'data', 'zipcodes.csv');
-            if (!fs.existsSync(zipCodeFilePath)) {
-                console.log('Zipcode CSV file not found at:', zipCodeFilePath);
+            const excelFilePath = path.join(process.cwd(), 'src', 'data', 'zipcodes.xlsx');
+            const csvFilePath = path.join(process.cwd(), 'src', 'data', 'zipcodes.csv');
+            let filePath = '';
+            if (fs.existsSync(excelFilePath)) {
+                filePath = excelFilePath;
+                console.log('Found Excel zipcode file:', filePath);
+            }
+            else if (fs.existsSync(csvFilePath)) {
+                filePath = csvFilePath;
+                console.log('Found CSV zipcode file:', filePath);
+            }
+            else {
+                console.log('No zipcode file found (looking for zipcodes.xlsx or zipcodes.csv)');
                 return;
             }
             const existingCount = await this.prisma.zipCode.count();
@@ -176,7 +270,7 @@ let GeolocationService = class GeolocationService {
                 return;
             }
             console.log('Starting auto-import of zipcode data...');
-            const result = await this.importZipCodesFromFile(zipCodeFilePath);
+            const result = await this.importZipCodesFromFile(filePath);
             console.log(`Auto-import completed: ${result.imported} imported, ${result.skipped} skipped, ${result.errors} errors`);
         }
         catch (error) {

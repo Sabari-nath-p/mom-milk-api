@@ -1,6 +1,32 @@
 # Zipcode Data Import
 
-This directory contains CSV files for importing worldwide zipcode data with geographic coordinates.
+This directory contains Excel (.xlsx) and CSV files for importing worldwide zipcode data with geographic coordinates.
+
+## Supported File Formats
+
+### 🏆 **Excel Files (.xlsx) - RECOMMENDED**
+- **Primary format**: `zipcodes.xlsx` 
+- **Processed first** if available
+- More reliable parsing and data handling
+- See [EXCEL_FORMAT.md](./EXCEL_FORMAT.md) for detailed format specification
+
+### 📊 **CSV Files (.csv) - Legacy Support**
+- **Fallback format**: `zipcodes.csv`
+- Used when Excel file is not available
+- Multiple format variations supported
+
+## ⚠️ **IMPORTANT: Data Replacement Behavior**
+
+When import runs, **ALL existing zipcode data is completely removed** and replaced with new data from the file.
+
+## Quick Start
+
+1. **Place your zipcode file** in this directory:
+   - **Preferred**: `zipcodes.xlsx` 
+   - **Alternative**: `zipcodes.csv`
+
+2. **Start the server** - automatic import runs on startup
+3. **Or trigger manual import** via API (admin only)
 
 ## CSV File Format
 
