@@ -479,10 +479,10 @@ export class RequestService {
 
         // Calculate distances for all donors and filter by maxDistance
         const donorsWithDistance: DonorSearchResultDto[] = [];
-        
+
         for (const donor of allDonors) {
             const distance = await this.calculateRequestDistance(requester.zipcode, donor.zipcode);
-            
+
             // Include donor if:
             // 1. Distance is calculated and within maxDistance, OR
             // 2. Distance cannot be calculated (zipcode not in database) - we include them but show "Distance unknown"

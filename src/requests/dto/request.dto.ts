@@ -149,11 +149,21 @@ export class DonorSearchFiltersDto {
     @ApiPropertyOptional({ example: true, description: 'Filter by medical record sharing willingness' })
     @IsOptional()
     @IsBoolean()
+    @Transform(({ value }) => {
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return value;
+    })
     ableToShareMedicalRecord?: boolean;
 
     @ApiPropertyOptional({ example: true, description: 'Filter by availability status' })
     @IsOptional()
     @IsBoolean()
+    @Transform(({ value }) => {
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return value;
+    })
     isAvailable?: boolean;
 
     @ApiPropertyOptional({ example: 'O+', description: 'Filter by blood group' })

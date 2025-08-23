@@ -194,12 +194,26 @@ __decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: true, description: 'Filter by medical record sharing willingness' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsBoolean)(),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (value === 'true')
+            return true;
+        if (value === 'false')
+            return false;
+        return value;
+    }),
     __metadata("design:type", Boolean)
 ], DonorSearchFiltersDto.prototype, "ableToShareMedicalRecord", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: true, description: 'Filter by availability status' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsBoolean)(),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (value === 'true')
+            return true;
+        if (value === 'false')
+            return false;
+        return value;
+    }),
     __metadata("design:type", Boolean)
 ], DonorSearchFiltersDto.prototype, "isAvailable", void 0);
 __decorate([
