@@ -4,25 +4,25 @@ export declare class GeolocationController {
     private readonly geolocationService;
     constructor(geolocationService: GeolocationService);
     createZipCode(createZipCodeDto: CreateZipCodeDto): Promise<{
-        zipcode: string;
-        createdAt: Date;
-        updatedAt: Date;
-        id: number;
         country: string;
+        zipcode: string;
         placeName: string;
         latitude: number;
         longitude: number;
+        createdAt: Date;
+        updatedAt: Date;
+        id: number;
     }>;
     getAllZipCodes(page?: string, limit?: string): Promise<{
         data: {
-            zipcode: string;
-            createdAt: Date;
-            updatedAt: Date;
-            id: number;
             country: string;
+            zipcode: string;
             placeName: string;
             latitude: number;
             longitude: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
         }[];
         pagination: {
             currentPage: number;
@@ -35,14 +35,14 @@ export declare class GeolocationController {
     }>;
     searchZipCodes(query: string, page?: string, limit?: string): Promise<{
         data: {
-            zipcode: string;
-            createdAt: Date;
-            updatedAt: Date;
-            id: number;
             country: string;
+            zipcode: string;
             placeName: string;
             latitude: number;
             longitude: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
         }[];
         pagination: {
             currentPage: number;
@@ -54,34 +54,34 @@ export declare class GeolocationController {
         };
     }>;
     getZipCode(zipcode: string): Promise<{
-        zipcode: string;
-        createdAt: Date;
-        updatedAt: Date;
-        id: number;
         country: string;
+        zipcode: string;
         placeName: string;
         latitude: number;
         longitude: number;
+        createdAt: Date;
+        updatedAt: Date;
+        id: number;
     }>;
     updateZipCode(zipcode: string, updateZipCodeDto: UpdateZipCodeDto): Promise<{
-        zipcode: string;
-        createdAt: Date;
-        updatedAt: Date;
-        id: number;
         country: string;
+        zipcode: string;
         placeName: string;
         latitude: number;
         longitude: number;
+        createdAt: Date;
+        updatedAt: Date;
+        id: number;
     }>;
     deleteZipCode(zipcode: string): Promise<{
-        zipcode: string;
-        createdAt: Date;
-        updatedAt: Date;
-        id: number;
         country: string;
+        zipcode: string;
         placeName: string;
         latitude: number;
         longitude: number;
+        createdAt: Date;
+        updatedAt: Date;
+        id: number;
     }>;
     findNearbyZipCodes(zipcode: string, radius?: string): Promise<import("../services/geolocation.service").ZipCodeData[]>;
     importZipCodes(): Promise<{

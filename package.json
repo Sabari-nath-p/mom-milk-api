@@ -37,7 +37,7 @@
         "deploy:vps": "chmod +x deploy.sh && ./deploy.sh",
         "deploy:quick": "chmod +x quick-deploy.sh && ./quick-deploy.sh",
         "backup:create": "docker exec moms_milk_mysql_prod mysqldump -u root -p$MYSQL_ROOT_PASSWORD --all-databases > backup_$(date +%Y%m%d_%H%M%S).sql",
-        "health:check": "curl -f http://localhost:3000/health || echo 'API not responding'",
+        "health:check": "curl -f http://localhost:3001/health || echo 'API not responding'",
         "setup": "./scripts/setup.sh"
     },
     "dependencies": {

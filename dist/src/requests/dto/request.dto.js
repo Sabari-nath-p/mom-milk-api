@@ -12,7 +12,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationDto = exports.MilkRequestResponseDto = exports.DonorSearchResultDto = exports.RequestFiltersDto = exports.DonorSearchFiltersDto = exports.UpdateAvailabilityDto = exports.AcceptRequestDto = exports.UpdateMilkRequestDto = exports.CreateMilkRequestDto = exports.UpdateZipCodeDto = exports.CreateZipCodeDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
-const client_1 = require("@prisma/client");
+const class_transformer_1 = require("class-transformer");
+var RequestStatus;
+(function (RequestStatus) {
+    RequestStatus["PENDING"] = "PENDING";
+    RequestStatus["ACCEPTED"] = "ACCEPTED";
+    RequestStatus["REJECTED"] = "REJECTED";
+    RequestStatus["CANCELLED"] = "CANCELLED";
+    RequestStatus["COMPLETED"] = "COMPLETED";
+})(RequestStatus || (RequestStatus = {}));
+var RequestType;
+(function (RequestType) {
+    RequestType["MILK_REQUEST"] = "MILK_REQUEST";
+    RequestType["DONOR_OFFERING"] = "DONOR_OFFERING";
+})(RequestType || (RequestType = {}));
+var UserType;
+(function (UserType) {
+    UserType["MOTHER"] = "MOTHER";
+    UserType["DONOR"] = "DONOR";
+    UserType["ADMIN"] = "ADMIN";
+})(UserType || (UserType = {}));
 class CreateZipCodeDto {
 }
 exports.CreateZipCodeDto = CreateZipCodeDto;
@@ -52,8 +71,8 @@ class CreateMilkRequestDto {
 }
 exports.CreateMilkRequestDto = CreateMilkRequestDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ enum: client_1.RequestType, example: client_1.RequestType.MILK_REQUEST, description: 'Type of request' }),
-    (0, class_validator_1.IsEnum)(client_1.RequestType),
+    (0, swagger_1.ApiProperty)({ enum: RequestType, example: RequestType.MILK_REQUEST, description: 'Type of request' }),
+    (0, class_validator_1.IsEnum)(RequestType),
     __metadata("design:type", String)
 ], CreateMilkRequestDto.prototype, "requestType", void 0);
 __decorate([
@@ -96,9 +115,9 @@ class UpdateMilkRequestDto extends (0, swagger_1.PartialType)(CreateMilkRequestD
 }
 exports.UpdateMilkRequestDto = UpdateMilkRequestDto;
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ enum: client_1.RequestStatus, example: client_1.RequestStatus.ACCEPTED, description: 'Request status' }),
+    (0, swagger_1.ApiPropertyOptional)({ enum: RequestStatus, example: RequestStatus.ACCEPTED, description: 'Request status' }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(client_1.RequestStatus),
+    (0, class_validator_1.IsEnum)(RequestStatus),
     __metadata("design:type", String)
 ], UpdateMilkRequestDto.prototype, "status", void 0);
 __decorate([
@@ -168,6 +187,7 @@ __decorate([
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(1),
     (0, class_validator_1.Max)(1000),
+    (0, class_transformer_1.Transform)(({ value }) => parseInt(value, 10)),
     __metadata("design:type", Number)
 ], DonorSearchFiltersDto.prototype, "maxDistance", void 0);
 __decorate([
@@ -189,10 +209,23 @@ __decorate([
     __metadata("design:type", String)
 ], DonorSearchFiltersDto.prototype, "bloodGroup", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '12345', description: 'Filter by donor zipcode' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DonorSearchFiltersDto.prototype, "zipcode", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Sarah Johnson', description: 'Search by donor name' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DonorSearchFiltersDto.prototype, "donorName", void 0);
+__decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: 1, description: 'Page number' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(1),
+    (0, class_transformer_1.Transform)(({ value }) => parseInt(value, 10)),
     __metadata("design:type", Number)
 ], DonorSearchFiltersDto.prototype, "page", void 0);
 __decorate([
@@ -201,6 +234,7 @@ __decorate([
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(1),
     (0, class_validator_1.Max)(100),
+    (0, class_transformer_1.Transform)(({ value }) => parseInt(value, 10)),
     __metadata("design:type", Number)
 ], DonorSearchFiltersDto.prototype, "limit", void 0);
 class RequestFiltersDto {
@@ -211,15 +245,15 @@ class RequestFiltersDto {
 }
 exports.RequestFiltersDto = RequestFiltersDto;
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ enum: client_1.RequestStatus, description: 'Filter by request status' }),
+    (0, swagger_1.ApiPropertyOptional)({ enum: RequestStatus, description: 'Filter by request status' }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(client_1.RequestStatus),
+    (0, class_validator_1.IsEnum)(RequestStatus),
     __metadata("design:type", String)
 ], RequestFiltersDto.prototype, "status", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ enum: client_1.RequestType, description: 'Filter by request type' }),
+    (0, swagger_1.ApiPropertyOptional)({ enum: RequestType, description: 'Filter by request type' }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(client_1.RequestType),
+    (0, class_validator_1.IsEnum)(RequestType),
     __metadata("design:type", String)
 ], RequestFiltersDto.prototype, "requestType", void 0);
 __decorate([

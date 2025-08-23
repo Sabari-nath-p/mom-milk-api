@@ -84,6 +84,8 @@ Search for available donors near the buyer's location.
 - `ableToShareMedicalRecord` (optional): Filter by medical record sharing
 - `isAvailable` (optional): Filter by availability
 - `bloodGroup` (optional): Filter by blood group
+- `zipcode` (optional): Filter by donor zipcode (overrides distance-based search)
+- `donorName` (optional): Search by donor name (case-insensitive partial match)
 
 **Response:**
 ```json

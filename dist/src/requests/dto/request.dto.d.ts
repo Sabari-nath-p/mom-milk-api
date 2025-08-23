@@ -1,4 +1,19 @@
-import { RequestStatus, RequestType, UserType } from '@prisma/client';
+declare enum RequestStatus {
+    PENDING = "PENDING",
+    ACCEPTED = "ACCEPTED",
+    REJECTED = "REJECTED",
+    CANCELLED = "CANCELLED",
+    COMPLETED = "COMPLETED"
+}
+declare enum RequestType {
+    MILK_REQUEST = "MILK_REQUEST",
+    DONOR_OFFERING = "DONOR_OFFERING"
+}
+declare enum UserType {
+    MOTHER = "MOTHER",
+    DONOR = "DONOR",
+    ADMIN = "ADMIN"
+}
 export declare class CreateZipCodeDto {
     country: string;
     zipcode: string;
@@ -39,6 +54,8 @@ export declare class DonorSearchFiltersDto {
     ableToShareMedicalRecord?: boolean;
     isAvailable?: boolean;
     bloodGroup?: string;
+    zipcode?: string;
+    donorName?: string;
     page?: number;
     limit?: number;
 }

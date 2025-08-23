@@ -363,6 +363,19 @@ export class RequestService {
             whereClause.bloodGroup = filterOptions.bloodGroup;
         }
 
+        // Add zipcode filter if provided (overrides distance-based search)
+        if (filterOptions.zipcode) {
+            whereClause.zipcode = filterOptions.zipcode;
+        }
+
+        // Add donor name search if provided
+        if (filterOptions.donorName) {
+            whereClause.name = {
+                contains: filterOptions.donorName,
+                mode: 'insensitive'
+            };
+        }
+
         const [donors, total] = await Promise.all([
             this.prisma.user.findMany({
                 where: whereClause,

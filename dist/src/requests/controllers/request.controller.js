@@ -145,6 +145,8 @@ __decorate([
     (0, swagger_1.ApiQuery)({ name: 'ableToShareMedicalRecord', required: false, description: 'Filter by medical record sharing' }),
     (0, swagger_1.ApiQuery)({ name: 'isAvailable', required: false, description: 'Filter by availability' }),
     (0, swagger_1.ApiQuery)({ name: 'bloodGroup', required: false, description: 'Filter by blood group' }),
+    (0, swagger_1.ApiQuery)({ name: 'zipcode', required: false, description: 'Filter by donor zipcode' }),
+    (0, swagger_1.ApiQuery)({ name: 'donorName', required: false, description: 'Search by donor name' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Donors found successfully' }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Query)()),

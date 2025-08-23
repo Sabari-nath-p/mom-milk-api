@@ -310,6 +310,15 @@ let RequestService = class RequestService {
         if (filterOptions.bloodGroup) {
             whereClause.bloodGroup = filterOptions.bloodGroup;
         }
+        if (filterOptions.zipcode) {
+            whereClause.zipcode = filterOptions.zipcode;
+        }
+        if (filterOptions.donorName) {
+            whereClause.name = {
+                contains: filterOptions.donorName,
+                mode: 'insensitive'
+            };
+        }
         const [donors, total] = await Promise.all([
             this.prisma.user.findMany({
                 where: whereClause,

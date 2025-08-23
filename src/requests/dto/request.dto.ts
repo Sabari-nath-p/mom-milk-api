@@ -1,6 +1,27 @@
 import { IsString, IsOptional, IsNumber, IsEnum, IsBoolean, IsDateString, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { RequestStatus, RequestType, UserType } from '@prisma/client';
+import { Transform } from 'class-transformer';
+// import { RequestStatus, RequestType, UserType } from '@prisma/client';
+
+// Temporary workaround for enum types
+enum RequestStatus {
+    PENDING = 'PENDING',
+    ACCEPTED = 'ACCEPTED',
+    REJECTED = 'REJECTED',
+    CANCELLED = 'CANCELLED',
+    COMPLETED = 'COMPLETED'
+}
+
+enum RequestType {
+    MILK_REQUEST = 'MILK_REQUEST',
+    DONOR_OFFERING = 'DONOR_OFFERING'
+}
+
+enum UserType {
+    MOTHER = 'MOTHER',
+    DONOR = 'DONOR',
+    ADMIN = 'ADMIN'
+}
 
 export class CreateZipCodeDto {
     @ApiProperty({ example: 'United States', description: 'Country name' })
@@ -123,6 +144,7 @@ export class DonorSearchFiltersDto {
     @IsNumber()
     @Min(1)
     @Max(1000)
+    @Transform(({ value }) => parseInt(value, 10))
     maxDistance?: number;
 
     @ApiPropertyOptional({ example: true, description: 'Filter by medical record sharing willingness' })
@@ -140,10 +162,21 @@ export class DonorSearchFiltersDto {
     @IsString()
     bloodGroup?: string;
 
+    @ApiPropertyOptional({ example: '12345', description: 'Filter by donor zipcode' })
+    @IsOptional()
+    @IsString()
+    zipcode?: string;
+
+    @ApiPropertyOptional({ example: 'Sarah Johnson', description: 'Search by donor name' })
+    @IsOptional()
+    @IsString()
+    donorName?: string;
+
     @ApiPropertyOptional({ example: 1, description: 'Page number' })
     @IsOptional()
     @IsNumber()
     @Min(1)
+    @Transform(({ value }) => parseInt(value, 10))
     page?: number = 1;
 
     @ApiPropertyOptional({ example: 10, description: 'Items per page' })
@@ -151,6 +184,7 @@ export class DonorSearchFiltersDto {
     @IsNumber()
     @Min(1)
     @Max(100)
+    @Transform(({ value }) => parseInt(value, 10))
     limit?: number = 10;
 }
 

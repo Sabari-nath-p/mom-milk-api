@@ -118,6 +118,8 @@ export class RequestController {
     @ApiQuery({ name: 'ableToShareMedicalRecord', required: false, description: 'Filter by medical record sharing' })
     @ApiQuery({ name: 'isAvailable', required: false, description: 'Filter by availability' })
     @ApiQuery({ name: 'bloodGroup', required: false, description: 'Filter by blood group' })
+    @ApiQuery({ name: 'zipcode', required: false, description: 'Filter by donor zipcode' })
+    @ApiQuery({ name: 'donorName', required: false, description: 'Search by donor name' })
     @ApiResponse({ status: 200, description: 'Donors found successfully' })
     async searchDonors(
         @Request() req,
