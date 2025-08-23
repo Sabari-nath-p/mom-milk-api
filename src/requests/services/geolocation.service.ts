@@ -148,7 +148,7 @@ export class GeolocationService {
         if (fileExtension === '.xlsx' || fileExtension === '.xls') {
             // Handle Excel files
             console.log('Processing Excel file:', filePath);
-            
+
             try {
                 const workbook = XLSX.readFile(filePath);
                 const sheetName = workbook.SheetNames[0]; // Use first sheet
@@ -158,7 +158,7 @@ export class GeolocationService {
                 // Skip header row and process data
                 for (let i = 1; i < data.length; i++) {
                     const row = data[i];
-                    
+
                     try {
                         if (!row || row.length === 0) continue;
 
@@ -210,7 +210,7 @@ export class GeolocationService {
                 }
 
                 return { imported, skipped, errors, deleted };
-                
+
             } catch (error) {
                 throw new Error(`Failed to process Excel file: ${error.message}`);
             }
@@ -336,7 +336,7 @@ export class GeolocationService {
             // Look for Excel file first, then CSV
             const excelFilePath = path.join(process.cwd(), 'src', 'data', 'zipcodes.xlsx');
             const csvFilePath = path.join(process.cwd(), 'src', 'data', 'zipcodes.csv');
-            
+
             let filePath = '';
             if (fs.existsSync(excelFilePath)) {
                 filePath = excelFilePath;
@@ -366,8 +366,16 @@ export class GeolocationService {
 
     // CRUD operations for zipcode management
     async createZipCode(createZipCodeDto: CreateZipCodeDto) {
-        return this.prisma.zipCode.create({
-            data: createZipCodeDto,
+        // Use upsert to handle duplicate zipcode entries
+        return this.prisma.zipCode.upsert({
+            where: { zipcode: createZipCodeDto.zipcode },
+            update: {
+                placeName: createZipCodeDto.placeName,
+                latitude: createZipCodeDto.latitude,
+                longitude: createZipCodeDto.longitude,
+                country: createZipCodeDto.country,
+            },
+            create: createZipCodeDto,
         });
     }
 

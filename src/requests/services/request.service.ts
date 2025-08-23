@@ -452,18 +452,18 @@ export class RequestService {
         donorsWithDistance.sort((a, b) => {
             // Both have unknown distance
             if (a.distance === 999999 && b.distance === 999999) return 0;
-            
+
             // One has unknown distance - put it last
             if (a.distance === 999999) return 1;
             if (b.distance === 999999) return -1;
-            
+
             // Both have same zipcode (distance = 0) - maintain order
             if (a.distance === 0 && b.distance === 0) return 0;
-            
+
             // One has same zipcode - put it first
             if (a.distance === 0) return -1;
             if (b.distance === 0) return 1;
-            
+
             // Both have known distances - sort by distance
             return a.distance - b.distance;
         });
