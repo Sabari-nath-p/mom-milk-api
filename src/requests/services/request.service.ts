@@ -332,83 +332,161 @@ export class RequestService {
             throw new NotFoundException('Requester not found');
         }
 
-        // Find nearby zipcodes
-        const nearbyZipCodes = await this.geolocationService.findNearbyZipCodes(requester.zipcode, maxDistance);
-        const nearbyZipCodeStrings = nearbyZipCodes.map(z => z.zipcode);
-
-        if (nearbyZipCodeStrings.length === 0) {
-            return {
-                data: [],
-                pagination: this.createPaginationResponse(page, limit, 0),
-            };
-        }
-
-        const whereClause: any = {
+        // Base where clause for all donors
+        const baseWhereClause: any = {
             userType: UserType.DONOR,
             isActive: true,
-            zipcode: {
-                in: nearbyZipCodeStrings,
-            },
         };
 
+        // Apply filters
         if (filterOptions.ableToShareMedicalRecord !== undefined) {
-            whereClause.ableToShareMedicalRecord = filterOptions.ableToShareMedicalRecord;
+            baseWhereClause.ableToShareMedicalRecord = filterOptions.ableToShareMedicalRecord;
         }
 
         if (filterOptions.isAvailable !== undefined) {
-            whereClause.isAvailable = filterOptions.isAvailable;
+            baseWhereClause.isAvailable = filterOptions.isAvailable;
         }
 
         if (filterOptions.bloodGroup) {
-            whereClause.bloodGroup = filterOptions.bloodGroup;
+            baseWhereClause.bloodGroup = filterOptions.bloodGroup;
         }
 
         // Add zipcode filter if provided (overrides distance-based search)
         if (filterOptions.zipcode) {
-            whereClause.zipcode = filterOptions.zipcode;
+            baseWhereClause.zipcode = filterOptions.zipcode;
         }
 
         // Add donor name search if provided
         if (filterOptions.donorName) {
-            whereClause.name = {
+            baseWhereClause.name = {
                 contains: filterOptions.donorName,
                 mode: 'insensitive'
             };
         }
 
-        const [donors, total] = await Promise.all([
-            this.prisma.user.findMany({
-                where: whereClause,
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    zipcode: true,
-                    userType: true,
-                    description: true,
-                    bloodGroup: true,
-                    babyDeliveryDate: true,
-                    ableToShareMedicalRecord: true,
-                    isAvailable: true,
-                    createdAt: true,
-                    receivedRequests: {
-                        where: {
-                            requesterId: requesterId,
-                            status: RequestStatus.ACCEPTED,
+        // If specific zipcode filter is provided, use simple search
+        if (filterOptions.zipcode) {
+            const [donors, total] = await Promise.all([
+                this.prisma.user.findMany({
+                    where: baseWhereClause,
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        zipcode: true,
+                        userType: true,
+                        description: true,
+                        bloodGroup: true,
+                        babyDeliveryDate: true,
+                        ableToShareMedicalRecord: true,
+                        isAvailable: true,
+                        createdAt: true,
+                        receivedRequests: {
+                            where: {
+                                requesterId: requesterId,
+                                status: RequestStatus.ACCEPTED,
+                            },
+                            select: { id: true },
                         },
-                        select: { id: true },
                     },
-                },
-                skip,
-                take: limit,
-            }),
-            this.prisma.user.count({ where: whereClause }),
-        ]);
+                    skip,
+                    take: limit,
+                }),
+                this.prisma.user.count({ where: baseWhereClause }),
+            ]);
 
-        // Calculate distances and format response
-        const donorsWithDistance: DonorSearchResultDto[] = await Promise.all(
-            donors.map(async (donor) => {
-                const distance = await this.calculateRequestDistance(requester.zipcode, donor.zipcode);
+            // Calculate distances and format response
+            const donorsWithDistance: DonorSearchResultDto[] = await Promise.all(
+                donors.map(async (donor) => {
+                    const distance = await this.calculateRequestDistance(requester.zipcode, donor.zipcode);
+                    const zipCodeData = await this.geolocationService.getZipCodeCoordinates(donor.zipcode);
+
+                    // Format distance text for better UX
+                    const distanceText = distance ?
+                        (distance < 1 ?
+                            `${Math.round(distance * 1000)}m away` :
+                            `${distance.toFixed(1)} km away`
+                        ) : 'Distance unknown';
+
+                    // Build full address string (no state in your data)
+                    const fullAddress = zipCodeData ? [
+                        zipCodeData.placeName,
+                        zipCodeData.country
+                    ].filter(Boolean).join(', ') : 'Unknown location';
+
+                    return {
+                        donor: {
+                            id: donor.id,
+                            name: donor.name,
+                            email: donor.email,
+                            zipcode: donor.zipcode,
+                            userType: donor.userType as any,
+                            description: donor.description,
+                            bloodGroup: donor.bloodGroup,
+                            babyDeliveryDate: donor.babyDeliveryDate,
+                            ableToShareMedicalRecord: donor.ableToShareMedicalRecord,
+                            isAvailable: donor.isAvailable,
+                            createdAt: donor.createdAt,
+                        },
+                        distance: distance || 0,
+                        distanceText,
+                        hasAcceptedRequest: donor.receivedRequests.length > 0,
+                        location: {
+                            zipcode: donor.zipcode,
+                            placeName: zipCodeData?.placeName || 'Unknown',
+                            country: zipCodeData?.country || 'Unknown',
+                            latitude: zipCodeData?.latitude || 0,
+                            longitude: zipCodeData?.longitude || 0,
+                            fullAddress,
+                        },
+                    };
+                })
+            );
+
+            // Sort by distance
+            donorsWithDistance.sort((a, b) => a.distance - b.distance);
+
+            return {
+                data: donorsWithDistance,
+                pagination: this.createPaginationResponse(page, limit, total),
+            };
+        }
+
+        // For distance-based search, get ALL donors and filter by distance
+        const allDonors = await this.prisma.user.findMany({
+            where: baseWhereClause,
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                zipcode: true,
+                userType: true,
+                description: true,
+                bloodGroup: true,
+                babyDeliveryDate: true,
+                ableToShareMedicalRecord: true,
+                isAvailable: true,
+                createdAt: true,
+                receivedRequests: {
+                    where: {
+                        requesterId: requesterId,
+                        status: RequestStatus.ACCEPTED,
+                    },
+                    select: { id: true },
+                },
+            },
+        });
+
+        // Calculate distances for all donors and filter by maxDistance
+        const donorsWithDistance: DonorSearchResultDto[] = [];
+        
+        for (const donor of allDonors) {
+            const distance = await this.calculateRequestDistance(requester.zipcode, donor.zipcode);
+            
+            // Include donor if:
+            // 1. Distance is calculated and within maxDistance, OR
+            // 2. Distance cannot be calculated (zipcode not in database) - we include them but show "Distance unknown"
+            if (!distance || distance <= maxDistance) {
                 const zipCodeData = await this.geolocationService.getZipCodeCoordinates(donor.zipcode);
 
                 // Format distance text for better UX
@@ -418,19 +496,19 @@ export class RequestService {
                         `${distance.toFixed(1)} km away`
                     ) : 'Distance unknown';
 
-                // Build full address string (no state in your data)
+                // Build full address string
                 const fullAddress = zipCodeData ? [
                     zipCodeData.placeName,
                     zipCodeData.country
                 ].filter(Boolean).join(', ') : 'Unknown location';
 
-                return {
+                donorsWithDistance.push({
                     donor: {
                         id: donor.id,
                         name: donor.name,
                         email: donor.email,
                         zipcode: donor.zipcode,
-                        userType: donor.userType as any, // Type assertion to handle Prisma vs DTO enum mismatch
+                        userType: donor.userType as any,
                         description: donor.description,
                         bloodGroup: donor.bloodGroup,
                         babyDeliveryDate: donor.babyDeliveryDate,
@@ -438,7 +516,7 @@ export class RequestService {
                         isAvailable: donor.isAvailable,
                         createdAt: donor.createdAt,
                     },
-                    distance: distance || 0,
+                    distance: distance || 999999, // Put unknown distances at the end
                     distanceText,
                     hasAcceptedRequest: donor.receivedRequests.length > 0,
                     location: {
@@ -449,15 +527,24 @@ export class RequestService {
                         longitude: zipCodeData?.longitude || 0,
                         fullAddress,
                     },
-                };
-            })
-        );
+                });
+            }
+        }
 
-        // Sort by distance
-        donorsWithDistance.sort((a, b) => a.distance - b.distance);
+        // Sort by distance (known distances first, then unknown)
+        donorsWithDistance.sort((a, b) => {
+            if (a.distance === 999999 && b.distance === 999999) return 0;
+            if (a.distance === 999999) return 1;
+            if (b.distance === 999999) return -1;
+            return a.distance - b.distance;
+        });
+
+        // Apply pagination
+        const total = donorsWithDistance.length;
+        const paginatedDonors = donorsWithDistance.slice(skip, skip + limit);
 
         return {
-            data: donorsWithDistance,
+            data: paginatedDonors,
             pagination: this.createPaginationResponse(page, limit, total),
         };
     }
