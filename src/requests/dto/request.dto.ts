@@ -323,3 +323,37 @@ export class NotificationDto {
         status: RequestStatus;
     };
 }
+
+export class SendRequestToSpecificDonorDto {
+    @ApiProperty({ example: 1, description: 'Donor ID to send request to' })
+    @IsNumber()
+    donorId: number;
+
+    @ApiProperty({ example: 'Urgent milk request for newborn', description: 'Title of the request' })
+    @IsString()
+    title: string;
+
+    @ApiPropertyOptional({ example: 'My newborn needs breast milk urgently. Please help.', description: 'Detailed description of the request' })
+    @IsOptional()
+    @IsString()
+    description?: string;
+
+    @ApiProperty({ example: 500.0, description: 'Quantity needed in ml' })
+    @IsNumber()
+    @Min(0)
+    quantity: number;
+
+    @ApiProperty({ enum: ['LOW', 'MEDIUM', 'HIGH'], example: 'HIGH', description: 'Urgency level' })
+    @IsString()
+    urgency: string;
+
+    @ApiPropertyOptional({ example: '2024-01-25T10:00:00.000Z', description: 'When milk is needed by' })
+    @IsOptional()
+    @IsDateString()
+    neededBy?: string;
+
+    @ApiPropertyOptional({ example: 'Please contact me ASAP', description: 'Additional notes' })
+    @IsOptional()
+    @IsString()
+    notes?: string;
+}

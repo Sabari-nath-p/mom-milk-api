@@ -29,7 +29,8 @@ import {
     RequestFiltersDto,
     DonorSearchResultDto,
     MilkRequestResponseDto,
-    NotificationDto
+    NotificationDto,
+    SendRequestToSpecificDonorDto
 } from '../dto/request.dto';
 
 @ApiTags('Milk Requests')
@@ -201,5 +202,17 @@ export class RequestController {
         }
 
         return request;
+    }
+
+    @Post('send-to-donor')
+    @ApiOperation({ summary: 'Send a direct request to a specific donor' })
+    @ApiResponse({ status: 201, description: 'Request sent to donor successfully', type: MilkRequestResponseDto })
+    @ApiResponse({ status: 400, description: 'Bad request - invalid donor or donor not available' })
+    @ApiResponse({ status: 404, description: 'Donor not found' })
+    async sendRequestToSpecificDonor(
+        @Request() req,
+        @Body() sendRequestDto: SendRequestToSpecificDonorDto
+    ) {
+        return this.requestService.sendRequestToSpecificDonor(req.user.id, sendRequestDto);
     }
 }
