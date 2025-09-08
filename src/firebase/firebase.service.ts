@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 
 export interface FCMNotificationPayload {
     title: string;
@@ -32,8 +30,8 @@ export class FirebaseService {
         try {
             // Check if Firebase app is already initialized
             if (admin.apps.length === 0) {
-                const serviceAccountPath = join(process.cwd(), 'firebase-service-account.json');
-                const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+                // Try to use environment variables first, then fall back to service account file
+                const serviceAccount = this.getServiceAccountConfig();
                 
                 this.app = admin.initializeApp({
                     credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
@@ -46,7 +44,38 @@ export class FirebaseService {
             }
         } catch (error) {
             this.logger.error('Failed to initialize Firebase Admin SDK:', error);
-            throw error;
+            // Don't throw error to prevent app from crashing
+            // Firebase features will be disabled but app will still work
+            this.logger.warn('Firebase features will be disabled');
+        }
+    }
+
+    private getServiceAccountConfig() {
+        // Try environment variables first (for Docker/production)
+        if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+            return {
+                type: 'service_account',
+                project_id: process.env.FIREBASE_PROJECT_ID,
+                private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID || '',
+                private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+                client_email: process.env.FIREBASE_CLIENT_EMAIL,
+                client_id: process.env.FIREBASE_CLIENT_ID || '',
+                auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+                token_uri: 'https://oauth2.googleapis.com/token',
+                auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+                client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL || '',
+                universe_domain: 'googleapis.com'
+            };
+        }
+
+        // Fall back to local service account file (for development)
+        try {
+            const { readFileSync } = require('fs');
+            const { join } = require('path');
+            const serviceAccountPath = join(process.cwd(), 'firebase-service-account.json');
+            return JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+        } catch (error) {
+            throw new Error('Firebase configuration not found. Please set environment variables or provide firebase-service-account.json file.');
         }
     }
 
@@ -55,6 +84,11 @@ export class FirebaseService {
      */
     async sendNotification(message: FCMMessage): Promise<string> {
         try {
+            if (!this.app) {
+                this.logger.warn('Firebase not initialized, skipping notification');
+                return 'firebase-not-initialized';
+            }
+
             const fcmMessage: admin.messaging.Message = {
                 token: message.token,
                 notification: {

@@ -40,6 +40,13 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
+      # Firebase Configuration
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-momsmilk-8df67}
+      FIREBASE_PRIVATE_KEY_ID: ${FIREBASE_PRIVATE_KEY_ID:-c8370d311974783d6e1c850c92fb3c778fe524ec}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY:-}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-firebase-adminsdk-fbsvc@momsmilk-8df67.iam.gserviceaccount.com}
+      FIREBASE_CLIENT_ID: ${FIREBASE_CLIENT_ID:-110707517782897559795}
+      FIREBASE_CLIENT_X509_CERT_URL: ${FIREBASE_CLIENT_X509_CERT_URL:-}
     ports:
       - "${API_PORT:-3001}:3000"
       - "9230:9229" # Debug port (changed to avoid conflict)
