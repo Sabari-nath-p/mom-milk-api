@@ -217,6 +217,7 @@ export class RequestFiltersDto {
     @IsOptional()
     @IsNumber()
     @Min(1)
+    @Transform(({ value }) => parseInt(value, 10))
     page?: number = 1;
 
     @ApiPropertyOptional({ example: 10, description: 'Items per page' })
@@ -224,6 +225,7 @@ export class RequestFiltersDto {
     @IsNumber()
     @Min(1)
     @Max(100)
+    @Transform(({ value }) => parseInt(value, 10))
     limit?: number = 10;
 }
 

@@ -12,6 +12,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
 import { RequestModule } from './requests/requests.module';
 import { StartupModule } from './startup/startup.module';
+import { FirebaseModule } from './firebase/firebase.module';
 
 @Module({
     imports: [
@@ -28,6 +29,7 @@ import { StartupModule } from './startup/startup.module';
         AuthModule,
         RequestModule,
         StartupModule,
+        FirebaseModule,
     ],
     controllers: [AppController],
     providers: [AppService],

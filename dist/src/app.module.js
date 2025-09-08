@@ -21,6 +21,7 @@ const analytics_module_1 = require("./analytics/analytics.module");
 const auth_module_1 = require("./auth/auth.module");
 const requests_module_1 = require("./requests/requests.module");
 const startup_module_1 = require("./startup/startup.module");
+const firebase_module_1 = require("./firebase/firebase.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -40,6 +41,7 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             requests_module_1.RequestModule,
             startup_module_1.StartupModule,
+            firebase_module_1.FirebaseModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

@@ -13,11 +13,13 @@ exports.RequestService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const geolocation_service_1 = require("./geolocation.service");
+const firebase_service_1 = require("../../firebase/firebase.service");
 const client_1 = require("@prisma/client");
 let RequestService = class RequestService {
-    constructor(prisma, geolocationService) {
+    constructor(prisma, geolocationService, firebaseService) {
         this.prisma = prisma;
         this.geolocationService = geolocationService;
+        this.firebaseService = firebaseService;
     }
     async createRequest(userId, createRequestDto) {
         const user = await this.prisma.user.findUnique({
@@ -50,13 +52,33 @@ let RequestService = class RequestService {
     async getUserRequests(userId, filters) {
         const { page = 1, limit = 10, ...filterOptions } = filters;
         const skip = (page - 1) * limit;
-        const whereClause = {
-            requesterId: userId,
-        };
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { userType: true },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        let whereClause = {};
+        if (filterOptions.requestType === client_1.RequestType.MILK_OFFER) {
+            if (user.userType === client_1.UserType.DONOR) {
+                whereClause.requesterId = userId;
+                whereClause.requestType = client_1.RequestType.MILK_OFFER;
+            }
+            else {
+                whereClause.requestType = client_1.RequestType.MILK_OFFER;
+                whereClause.status = client_1.RequestStatus.PENDING;
+            }
+        }
+        else if (filterOptions.requestType === client_1.RequestType.MILK_REQUEST) {
+            whereClause.requesterId = userId;
+            whereClause.requestType = client_1.RequestType.MILK_REQUEST;
+        }
+        else {
+            whereClause.requesterId = userId;
+        }
         if (filterOptions.status)
             whereClause.status = filterOptions.status;
-        if (filterOptions.requestType)
-            whereClause.requestType = filterOptions.requestType;
         if (filterOptions.urgency)
             whereClause.urgency = filterOptions.urgency;
         const [requests, total] = await Promise.all([
@@ -105,18 +127,22 @@ let RequestService = class RequestService {
             throw new common_1.ForbiddenException('Only donors can view incoming requests');
         }
         const whereClause = {
-            requestType: client_1.RequestType.MILK_REQUEST,
-            status: client_1.RequestStatus.PENDING,
+            donorId: donorId,
         };
+        if (filterOptions.status) {
+            whereClause.status = filterOptions.status;
+        }
+        else {
+            whereClause.status = { in: [client_1.RequestStatus.PENDING, client_1.RequestStatus.ACCEPTED, client_1.RequestStatus.COMPLETED] };
+        }
+        if (filterOptions.requestType === client_1.RequestType.MILK_OFFER) {
+            whereClause.requestType = client_1.RequestType.MILK_OFFER;
+        }
+        else {
+            whereClause.requestType = client_1.RequestType.MILK_REQUEST;
+        }
         if (filterOptions.urgency)
             whereClause.urgency = filterOptions.urgency;
-        const nearbyZipCodes = await this.geolocationService.findNearbyZipCodes(donor.zipcode, 50);
-        const nearbyZipCodeStrings = nearbyZipCodes.map(z => z.zipcode);
-        if (nearbyZipCodeStrings.length > 0) {
-            whereClause.requesterZipcode = {
-                in: nearbyZipCodeStrings,
-            };
-        }
         const [requests, total] = await Promise.all([
             this.prisma.milkRequest.findMany({
                 where: whereClause,
@@ -526,6 +552,61 @@ let RequestService = class RequestService {
         });
         return this.formatRequestResponse(request);
     }
+    async getAvailableMilkOffers(buyerId, filters) {
+        const { page = 1, limit = 10, ...filterOptions } = filters;
+        const skip = (page - 1) * limit;
+        const buyer = await this.prisma.user.findUnique({
+            where: { id: buyerId },
+            select: { zipcode: true, userType: true },
+        });
+        if (!buyer) {
+            throw new common_1.NotFoundException('Buyer not found');
+        }
+        const whereClause = {
+            requestType: client_1.RequestType.MILK_OFFER,
+            status: client_1.RequestStatus.PENDING,
+        };
+        if (filterOptions.urgency)
+            whereClause.urgency = filterOptions.urgency;
+        const nearbyZipCodes = await this.geolocationService.findNearbyZipCodes(buyer.zipcode, 50);
+        const nearbyZipCodeStrings = nearbyZipCodes.map(z => z.zipcode);
+        if (nearbyZipCodeStrings.length > 0) {
+            whereClause.requesterZipcode = {
+                in: nearbyZipCodeStrings,
+            };
+        }
+        const [offers, total] = await Promise.all([
+            this.prisma.milkRequest.findMany({
+                where: whereClause,
+                include: {
+                    requester: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            userType: true,
+                        },
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.milkRequest.count({ where: whereClause }),
+        ]);
+        const offersWithDistance = await Promise.all(offers.map(async (offer) => {
+            const distance = await this.calculateRequestDistance(buyer.zipcode, offer.requesterZipcode);
+            return {
+                ...this.formatRequestResponse(offer),
+                distance,
+            };
+        }));
+        offersWithDistance.sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+        return {
+            data: offersWithDistance,
+            pagination: this.createPaginationResponse(page, limit, total),
+        };
+    }
     async calculateRequestDistance(zipcode1, zipcode2) {
         const coords1 = await this.geolocationService.getZipCodeCoordinates(zipcode1);
         const coords2 = await this.geolocationService.getZipCodeCoordinates(zipcode2);
@@ -580,9 +661,33 @@ let RequestService = class RequestService {
         };
     }
     async createNotification(data) {
-        return this.prisma.requestNotification.create({
+        const notification = await this.prisma.requestNotification.create({
             data,
         });
+        try {
+            const user = await this.prisma.user.findUnique({
+                where: { id: data.userId },
+                select: { fcmToken: true },
+            });
+            if (user?.fcmToken) {
+                await this.firebaseService.sendNotification({
+                    token: user.fcmToken,
+                    notification: {
+                        title: data.title,
+                        body: data.message,
+                    },
+                    data: {
+                        type: data.type,
+                        requestId: data.requestId?.toString() || '',
+                        notificationId: notification.id.toString(),
+                    },
+                });
+            }
+        }
+        catch (error) {
+            console.error('FCM notification failed:', error);
+        }
+        return notification;
     }
     async notifyUsersOfAvailability(donorId, donorName) {
         const pendingRequests = await this.prisma.milkRequest.findMany({
@@ -613,6 +718,7 @@ exports.RequestService = RequestService;
 exports.RequestService = RequestService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        geolocation_service_1.GeolocationService])
+        geolocation_service_1.GeolocationService,
+        firebase_service_1.FirebaseService])
 ], RequestService);
 //# sourceMappingURL=request.service.js.map

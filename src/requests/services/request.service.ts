@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GeolocationService } from './geolocation.service';
+import { FirebaseService } from '../../firebase/firebase.service';
 import {
     CreateMilkRequestDto,
     UpdateMilkRequestDto,
@@ -20,6 +21,7 @@ export class RequestService {
     constructor(
         private prisma: PrismaService,
         private geolocationService: GeolocationService,
+        private firebaseService: FirebaseService,
     ) { }
 
     // Milk Request Management
@@ -60,12 +62,41 @@ export class RequestService {
         const { page = 1, limit = 10, ...filterOptions } = filters;
         const skip = (page - 1) * limit;
 
-        const whereClause: any = {
-            requesterId: userId,
-        };
+        // Get user info to determine user type
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { userType: true },
+        });
 
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        let whereClause: any = {};
+
+        // Handle different request types based on user type and filters
+        if (filterOptions.requestType === RequestType.MILK_OFFER) {
+            if (user.userType === UserType.DONOR) {
+                // Donors see their own MILK_OFFER posts
+                whereClause.requesterId = userId;
+                whereClause.requestType = RequestType.MILK_OFFER;
+            } else {
+                // Buyers see available MILK_OFFER posts from donors (not their own)
+                whereClause.requestType = RequestType.MILK_OFFER;
+                whereClause.status = RequestStatus.PENDING;
+                // Don't filter by requesterId to show all available offers
+            }
+        } else if (filterOptions.requestType === RequestType.MILK_REQUEST) {
+            // For MILK_REQUEST, show user's own requests
+            whereClause.requesterId = userId;
+            whereClause.requestType = RequestType.MILK_REQUEST;
+        } else {
+            // No specific request type filter - show user's own requests
+            whereClause.requesterId = userId;
+        }
+
+        // Apply other filters
         if (filterOptions.status) whereClause.status = filterOptions.status;
-        if (filterOptions.requestType) whereClause.requestType = filterOptions.requestType;
         if (filterOptions.urgency) whereClause.urgency = filterOptions.urgency;
 
         const [requests, total] = await Promise.all([
@@ -121,21 +152,26 @@ export class RequestService {
         }
 
         const whereClause: any = {
-            requestType: RequestType.MILK_REQUEST,
-            status: RequestStatus.PENDING,
+            donorId: donorId, // Only show requests specifically sent to this donor
         };
 
-        if (filterOptions.urgency) whereClause.urgency = filterOptions.urgency;
-
-        // Get requests within reasonable distance (e.g., 50km)
-        const nearbyZipCodes = await this.geolocationService.findNearbyZipCodes(donor.zipcode, 50);
-        const nearbyZipCodeStrings = nearbyZipCodes.map(z => z.zipcode);
-
-        if (nearbyZipCodeStrings.length > 0) {
-            whereClause.requesterZipcode = {
-                in: nearbyZipCodeStrings,
-            };
+        // Handle status filtering - allow user to filter by specific status or show all relevant statuses
+        if (filterOptions.status) {
+            whereClause.status = filterOptions.status;
+        } else {
+            // Default: show PENDING, ACCEPTED, and COMPLETED requests
+            whereClause.status = { in: [RequestStatus.PENDING, RequestStatus.ACCEPTED, RequestStatus.COMPLETED] };
         }
+
+        // Handle different request types for incoming requests
+        if (filterOptions.requestType === RequestType.MILK_OFFER) {
+            whereClause.requestType = RequestType.MILK_OFFER;
+        } else {
+            // Default: show MILK_REQUEST (buyers requesting milk from donors)
+            whereClause.requestType = RequestType.MILK_REQUEST;
+        }
+
+        if (filterOptions.urgency) whereClause.urgency = filterOptions.urgency;
 
         const [requests, total] = await Promise.all([
             this.prisma.milkRequest.findMany({
@@ -648,6 +684,77 @@ export class RequestService {
         return this.formatRequestResponse(request);
     }
 
+    async getAvailableMilkOffers(buyerId: number, filters: RequestFiltersDto) {
+        const { page = 1, limit = 10, ...filterOptions } = filters;
+        const skip = (page - 1) * limit;
+
+        // Get buyer's zipcode for location-based filtering
+        const buyer = await this.prisma.user.findUnique({
+            where: { id: buyerId },
+            select: { zipcode: true, userType: true },
+        });
+
+        if (!buyer) {
+            throw new NotFoundException('Buyer not found');
+        }
+
+        const whereClause: any = {
+            requestType: RequestType.MILK_OFFER,
+            status: RequestStatus.PENDING,
+        };
+
+        if (filterOptions.urgency) whereClause.urgency = filterOptions.urgency;
+
+        // Get offers within reasonable distance (e.g., 50km)
+        const nearbyZipCodes = await this.geolocationService.findNearbyZipCodes(buyer.zipcode, 50);
+        const nearbyZipCodeStrings = nearbyZipCodes.map(z => z.zipcode);
+
+        if (nearbyZipCodeStrings.length > 0) {
+            whereClause.requesterZipcode = {
+                in: nearbyZipCodeStrings,
+            };
+        }
+
+        const [offers, total] = await Promise.all([
+            this.prisma.milkRequest.findMany({
+                where: whereClause,
+                include: {
+                    requester: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            userType: true,
+                        },
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.milkRequest.count({ where: whereClause }),
+        ]);
+
+        // Calculate distances for each offer
+        const offersWithDistance = await Promise.all(
+            offers.map(async (offer) => {
+                const distance = await this.calculateRequestDistance(buyer.zipcode, offer.requesterZipcode);
+                return {
+                    ...this.formatRequestResponse(offer),
+                    distance,
+                };
+            })
+        );
+
+        // Sort by distance
+        offersWithDistance.sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity));
+
+        return {
+            data: offersWithDistance,
+            pagination: this.createPaginationResponse(page, limit, total),
+        };
+    }
+
     // Private helper methods
     private async calculateRequestDistance(zipcode1: string, zipcode2: string): Promise<number | null> {
         const coords1 = await this.geolocationService.getZipCodeCoordinates(zipcode1);
@@ -720,9 +827,38 @@ export class RequestService {
         type: string;
         requestId?: number;
     }) {
-        return this.prisma.requestNotification.create({
+        // Create notification in database
+        const notification = await this.prisma.requestNotification.create({
             data,
         });
+
+        // Send FCM notification if user has FCM token
+        try {
+            const user = await this.prisma.user.findUnique({
+                where: { id: data.userId },
+                select: { fcmToken: true },
+            });
+
+            if (user?.fcmToken) {
+                await this.firebaseService.sendNotification({
+                    token: user.fcmToken,
+                    notification: {
+                        title: data.title,
+                        body: data.message,
+                    },
+                    data: {
+                        type: data.type,
+                        requestId: data.requestId?.toString() || '',
+                        notificationId: notification.id.toString(),
+                    },
+                });
+            }
+        } catch (error) {
+            // Log FCM error but don't fail the entire operation
+            console.error('FCM notification failed:', error);
+        }
+
+        return notification;
     }
 
     private async notifyUsersOfAvailability(donorId: number, donorName: string) {

@@ -1,10 +1,12 @@
 import { PrismaService } from '../../prisma/prisma.service';
 import { GeolocationService } from './geolocation.service';
+import { FirebaseService } from '../../firebase/firebase.service';
 import { CreateMilkRequestDto, UpdateMilkRequestDto, AcceptRequestDto, UpdateAvailabilityDto, DonorSearchFiltersDto, RequestFiltersDto, DonorSearchResultDto, MilkRequestResponseDto, NotificationDto, SendRequestToSpecificDonorDto } from '../dto/request.dto';
 export declare class RequestService {
     private prisma;
     private geolocationService;
-    constructor(prisma: PrismaService, geolocationService: GeolocationService);
+    private firebaseService;
+    constructor(prisma: PrismaService, geolocationService: GeolocationService, firebaseService: FirebaseService);
     createRequest(userId: number, createRequestDto: CreateMilkRequestDto): Promise<MilkRequestResponseDto>;
     getUserRequests(userId: number, filters: RequestFiltersDto): Promise<{
         data: MilkRequestResponseDto[];
@@ -86,12 +88,52 @@ export declare class RequestService {
         type: string;
         title: string;
         message: string;
+        requestId: number | null;
         isRead: boolean;
         sentAt: Date;
-        requestId: number | null;
     }>;
     markAllNotificationsAsRead(userId: number): Promise<import(".prisma/client").Prisma.BatchPayload>;
     sendRequestToSpecificDonor(requesterId: number, sendRequestDto: SendRequestToSpecificDonorDto): Promise<MilkRequestResponseDto>;
+    getAvailableMilkOffers(buyerId: number, filters: RequestFiltersDto): Promise<{
+        data: {
+            distance: number;
+            id: number;
+            requestType: import("../dto/request.dto").RequestType;
+            status: import("../dto/request.dto").RequestStatus;
+            title: string;
+            description?: string;
+            quantity?: number;
+            urgency?: string;
+            requesterZipcode: string;
+            donorZipcode?: string;
+            neededBy?: Date;
+            acceptedAt?: Date;
+            completedAt?: Date;
+            notes?: string;
+            createdAt: Date;
+            updatedAt: Date;
+            requester: {
+                id: number;
+                name: string;
+                email: string;
+                userType: import("../dto/request.dto").UserType;
+            };
+            donor?: {
+                id: number;
+                name: string;
+                email: string;
+                userType: import("../dto/request.dto").UserType;
+            };
+        }[];
+        pagination: {
+            currentPage: number;
+            totalPages: number;
+            totalItems: number;
+            itemsPerPage: number;
+            hasNextPage: boolean;
+            hasPreviousPage: boolean;
+        };
+    }>;
     private calculateRequestDistance;
     private formatRequestResponse;
     private formatNotificationResponse;

@@ -68,6 +68,9 @@ let RequestController = class RequestController {
     async sendRequestToSpecificDonor(req, sendRequestDto) {
         return this.requestService.sendRequestToSpecificDonor(req.user.id, sendRequestDto);
     }
+    async getAvailableMilkOffers(req, filters) {
+        return this.requestService.getAvailableMilkOffers(req.user.id, filters);
+    }
 };
 exports.RequestController = RequestController;
 __decorate([
@@ -226,6 +229,19 @@ __decorate([
     __metadata("design:paramtypes", [Object, request_dto_1.SendRequestToSpecificDonorDto]),
     __metadata("design:returntype", Promise)
 ], RequestController.prototype, "sendRequestToSpecificDonor", null);
+__decorate([
+    (0, common_1.Get)('available-offers'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get available milk offers for buyers' }),
+    (0, swagger_1.ApiQuery)({ name: 'page', required: false, description: 'Page number' }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, description: 'Items per page' }),
+    (0, swagger_1.ApiQuery)({ name: 'urgency', required: false, description: 'Filter by urgency' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Available offers retrieved successfully' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, request_dto_1.RequestFiltersDto]),
+    __metadata("design:returntype", Promise)
+], RequestController.prototype, "getAvailableMilkOffers", null);
 exports.RequestController = RequestController = __decorate([
     (0, swagger_1.ApiTags)('Milk Requests'),
     (0, common_1.Controller)('requests'),

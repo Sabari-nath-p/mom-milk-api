@@ -215,4 +215,17 @@ export class RequestController {
     ) {
         return this.requestService.sendRequestToSpecificDonor(req.user.id, sendRequestDto);
     }
+
+    @Get('available-offers')
+    @ApiOperation({ summary: 'Get available milk offers for buyers' })
+    @ApiQuery({ name: 'page', required: false, description: 'Page number' })
+    @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
+    @ApiQuery({ name: 'urgency', required: false, description: 'Filter by urgency' })
+    @ApiResponse({ status: 200, description: 'Available offers retrieved successfully' })
+    async getAvailableMilkOffers(
+        @Request() req,
+        @Query() filters: RequestFiltersDto
+    ) {
+        return this.requestService.getAvailableMilkOffers(req.user.id, filters);
+    }
 }

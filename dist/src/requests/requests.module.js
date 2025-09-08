@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RequestModule = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_module_1 = require("../prisma/prisma.module");
+const firebase_module_1 = require("../firebase/firebase.module");
 const request_controller_1 = require("./controllers/request.controller");
 const geolocation_controller_1 = require("./controllers/geolocation.controller");
 const request_service_1 = require("./services/request.service");
@@ -18,7 +19,7 @@ let RequestModule = class RequestModule {
 exports.RequestModule = RequestModule;
 exports.RequestModule = RequestModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule],
+        imports: [prisma_module_1.PrismaModule, firebase_module_1.FirebaseModule],
         controllers: [
             request_controller_1.RequestController,
             geolocation_controller_1.GeolocationController,
