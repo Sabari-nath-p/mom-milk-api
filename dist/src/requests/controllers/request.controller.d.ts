@@ -37,12 +37,14 @@ export declare class RequestController {
                 id: number;
                 name: string;
                 email: string;
+                phone: string;
                 userType: import("../dto/request.dto").UserType;
             };
             donor?: {
                 id: number;
                 name: string;
                 email: string;
+                phone: string;
                 userType: import("../dto/request.dto").UserType;
             };
         }[];
@@ -55,15 +57,16 @@ export declare class RequestController {
             hasPreviousPage: boolean;
         };
     }>;
-    updateRequest(req: any, id: number, updateRequestDto: UpdateMilkRequestDto): Promise<MilkRequestResponseDto>;
-    acceptRequest(req: any, id: number, acceptDto: AcceptRequestDto): Promise<MilkRequestResponseDto>;
-    searchDonors(req: any, filters: DonorSearchFiltersDto): Promise<{
-        data: DonorSearchResultDto[];
-        pagination: any;
-    }>;
     updateAvailability(req: any, updateDto: UpdateAvailabilityDto): Promise<{
         success: boolean;
         message: string;
+    }>;
+    updateRequest(req: any, id: number, updateRequestDto: UpdateMilkRequestDto): Promise<MilkRequestResponseDto>;
+    acceptRequest(req: any, id: number, acceptDto: AcceptRequestDto): Promise<MilkRequestResponseDto>;
+    rejectRequest(req: any, id: number, rejectDto: AcceptRequestDto): Promise<MilkRequestResponseDto>;
+    searchDonors(req: any, filters: DonorSearchFiltersDto): Promise<{
+        data: DonorSearchResultDto[];
+        pagination: any;
     }>;
     getNotifications(req: any, page?: string, limit?: string): Promise<{
         data: NotificationDto[];
@@ -113,12 +116,14 @@ export declare class RequestController {
                 id: number;
                 name: string;
                 email: string;
+                phone: string;
                 userType: import("../dto/request.dto").UserType;
             };
             donor?: {
                 id: number;
                 name: string;
                 email: string;
+                phone: string;
                 userType: import("../dto/request.dto").UserType;
             };
         }[];

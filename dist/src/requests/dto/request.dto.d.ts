@@ -113,12 +113,14 @@ export declare class MilkRequestResponseDto {
         id: number;
         name: string;
         email: string;
+        phone: string;
         userType: UserType;
     };
     donor?: {
         id: number;
         name: string;
         email: string;
+        phone: string;
         userType: UserType;
     };
 }

@@ -81,6 +81,18 @@ export class RequestController {
         return this.requestService.getIncomingRequests(req.user.id, filters);
     }
 
+    // Availability Management
+    @Patch('availability')
+    @ApiOperation({ summary: 'Update donor availability status' })
+    @ApiResponse({ status: 200, description: 'Availability updated successfully' })
+    @ApiResponse({ status: 403, description: 'Only donors can update availability' })
+    async updateAvailability(
+        @Request() req,
+        @Body() updateDto: UpdateAvailabilityDto
+    ) {
+        return this.requestService.updateAvailability(req.user.id, updateDto);
+    }
+
     @Patch(':id')
     @ApiOperation({ summary: 'Update a request' })
     @ApiParam({ name: 'id', description: 'Request ID' })
@@ -110,6 +122,21 @@ export class RequestController {
         return this.requestService.acceptRequest(req.user.id, id, acceptDto);
     }
 
+    @Post(':id/reject')
+    @ApiOperation({ summary: 'Reject a milk request (Donor only)' })
+    @ApiParam({ name: 'id', description: 'Request ID' })
+    @ApiResponse({ status: 200, description: 'Request rejected successfully', type: MilkRequestResponseDto })
+    @ApiResponse({ status: 404, description: 'Request not found' })
+    @ApiResponse({ status: 403, description: 'Only donors can reject requests' })
+    @ApiResponse({ status: 400, description: 'Request is no longer pending' })
+    async rejectRequest(
+        @Request() req,
+        @Param('id', ParseIntPipe) id: number,
+        @Body() rejectDto: AcceptRequestDto
+    ) {
+        return this.requestService.rejectRequest(req.user.id, id, rejectDto);
+    }
+
     // Donor Search
     @Get('search/donors')
     @ApiOperation({ summary: 'Search for available donors' })
@@ -127,18 +154,6 @@ export class RequestController {
         @Query() filters: DonorSearchFiltersDto
     ) {
         return this.requestService.searchDonors(req.user.id, filters);
-    }
-
-    // Availability Management
-    @Patch('availability')
-    @ApiOperation({ summary: 'Update donor availability status' })
-    @ApiResponse({ status: 200, description: 'Availability updated successfully' })
-    @ApiResponse({ status: 403, description: 'Only donors can update availability' })
-    async updateAvailability(
-        @Request() req,
-        @Body() updateDto: UpdateAvailabilityDto
-    ) {
-        return this.requestService.updateAvailability(req.user.id, updateDto);
     }
 
     // Notifications

@@ -49,6 +49,7 @@ export class RequestService {
                         id: true,
                         name: true,
                         email: true,
+                        phone: true,
                         userType: true,
                     },
                 },
@@ -108,6 +109,7 @@ export class RequestService {
                             id: true,
                             name: true,
                             email: true,
+                            phone: true,
                             userType: true,
                         },
                     },
@@ -116,6 +118,7 @@ export class RequestService {
                             id: true,
                             name: true,
                             email: true,
+                            phone: true,
                             userType: true,
                         },
                     },
@@ -182,6 +185,7 @@ export class RequestService {
                             id: true,
                             name: true,
                             email: true,
+                            phone: true,
                             userType: true,
                         },
                     },
@@ -235,6 +239,7 @@ export class RequestService {
                         id: true,
                         name: true,
                         email: true,
+                        phone: true,
                         userType: true,
                     },
                 },
@@ -267,6 +272,7 @@ export class RequestService {
                         id: true,
                         name: true,
                         email: true,
+                        phone: true,
                         userType: true,
                     },
                 },
@@ -275,6 +281,7 @@ export class RequestService {
                         id: true,
                         name: true,
                         email: true,
+                        phone: true,
                         userType: true,
                     },
                 },
@@ -289,6 +296,97 @@ export class RequestService {
             type: 'REQUEST_ACCEPTED',
             requestId: requestId,
         });
+
+        return this.formatRequestResponse(updatedRequest);
+    }
+
+    async rejectRequest(donorId: number, requestId: number, rejectDto: AcceptRequestDto): Promise<MilkRequestResponseDto> {
+        const donor = await this.prisma.user.findUnique({
+            where: { id: donorId },
+            select: { id: true, userType: true, zipcode: true, name: true },
+        });
+
+        if (!donor) {
+            throw new NotFoundException('Donor not found');
+        }
+
+        if (donor.userType !== UserType.DONOR) {
+            throw new ForbiddenException('Only donors can reject requests');
+        }
+
+        const request = await this.prisma.milkRequest.findUnique({
+            where: { id: requestId },
+            include: {
+                requester: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        userType: true,
+                    },
+                },
+            },
+        });
+
+        if (!request) {
+            throw new NotFoundException('Request not found');
+        }
+
+        if (request.status !== RequestStatus.PENDING) {
+            throw new BadRequestException('Request is no longer pending');
+        }
+
+        const updatedRequest = await this.prisma.milkRequest.update({
+            where: { id: requestId },
+            data: {
+                status: RequestStatus.DECLINED,
+                donorId: donorId,
+                donorZipcode: donor.zipcode,
+            },
+            include: {
+                requester: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        userType: true,
+                    },
+                },
+                donor: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        userType: true,
+                    },
+                },
+            },
+        });
+
+        // Send notification to requester
+        await this.createNotification({
+            userId: request.requesterId,
+            title: 'Request Declined',
+            message: `${donor.name} has declined your milk request: "${request.title}". ${rejectDto.message || 'No reason provided.'}`,
+            type: 'REQUEST_DECLINED',
+            requestId: requestId,
+        });
+
+        // Send Firebase notification to requester
+        try {
+            await this.firebaseService.sendRequestDeclinedNotification(
+                request.requester.id,
+                request.requester.name,
+                donor.name,
+                request.title,
+                rejectDto.message || 'No reason provided'
+            );
+        } catch (error) {
+            console.error('Failed to send Firebase notification:', error);
+        }
 
         return this.formatRequestResponse(updatedRequest);
     }
@@ -630,6 +728,21 @@ export class RequestService {
             throw new BadRequestException('Donor account is not active');
         }
 
+        // Check for existing pending requests to this donor
+        const existingPendingRequest = await this.prisma.milkRequest.findFirst({
+            where: {
+                requesterId: requesterId,
+                donorId: sendRequestDto.donorId,
+                status: RequestStatus.PENDING,
+            },
+        });
+
+        if (existingPendingRequest) {
+            throw new BadRequestException(
+                `You already have a pending request to this donor. Please wait for them to respond or cancel your existing request first.`
+            );
+        }
+
         // Calculate distance between requester and donor
         const distance = await this.calculateRequestDistance(requester.zipcode, donor.zipcode);
 
@@ -658,6 +771,7 @@ export class RequestService {
                         id: true,
                         name: true,
                         email: true,
+                        phone: true,
                         userType: true,
                     },
                 },
@@ -666,6 +780,7 @@ export class RequestService {
                         id: true,
                         name: true,
                         email: true,
+                        phone: true,
                         userType: true,
                     },
                 },

@@ -31,17 +31,20 @@ let RequestController = class RequestController {
     async getIncomingRequests(req, filters) {
         return this.requestService.getIncomingRequests(req.user.id, filters);
     }
+    async updateAvailability(req, updateDto) {
+        return this.requestService.updateAvailability(req.user.id, updateDto);
+    }
     async updateRequest(req, id, updateRequestDto) {
         return this.requestService.updateRequestStatus(req.user.id, id, updateRequestDto);
     }
     async acceptRequest(req, id, acceptDto) {
         return this.requestService.acceptRequest(req.user.id, id, acceptDto);
     }
+    async rejectRequest(req, id, rejectDto) {
+        return this.requestService.rejectRequest(req.user.id, id, rejectDto);
+    }
     async searchDonors(req, filters) {
         return this.requestService.searchDonors(req.user.id, filters);
-    }
-    async updateAvailability(req, updateDto) {
-        return this.requestService.updateAvailability(req.user.id, updateDto);
     }
     async getNotifications(req, page = '1', limit = '20') {
         return this.requestService.getUserNotifications(req.user.id, parseInt(page), parseInt(limit));
@@ -114,6 +117,17 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], RequestController.prototype, "getIncomingRequests", null);
 __decorate([
+    (0, common_1.Patch)('availability'),
+    (0, swagger_1.ApiOperation)({ summary: 'Update donor availability status' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Availability updated successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Only donors can update availability' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, request_dto_1.UpdateAvailabilityDto]),
+    __metadata("design:returntype", Promise)
+], RequestController.prototype, "updateAvailability", null);
+__decorate([
     (0, common_1.Patch)(':id'),
     (0, swagger_1.ApiOperation)({ summary: 'Update a request' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: 'Request ID' }),
@@ -143,6 +157,21 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], RequestController.prototype, "acceptRequest", null);
 __decorate([
+    (0, common_1.Post)(':id/reject'),
+    (0, swagger_1.ApiOperation)({ summary: 'Reject a milk request (Donor only)' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Request ID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Request rejected successfully', type: request_dto_1.MilkRequestResponseDto }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Request not found' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Only donors can reject requests' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Request is no longer pending' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number, request_dto_1.AcceptRequestDto]),
+    __metadata("design:returntype", Promise)
+], RequestController.prototype, "rejectRequest", null);
+__decorate([
     (0, common_1.Get)('search/donors'),
     (0, swagger_1.ApiOperation)({ summary: 'Search for available donors' }),
     (0, swagger_1.ApiQuery)({ name: 'page', required: false, description: 'Page number' }),
@@ -160,17 +189,6 @@ __decorate([
     __metadata("design:paramtypes", [Object, request_dto_1.DonorSearchFiltersDto]),
     __metadata("design:returntype", Promise)
 ], RequestController.prototype, "searchDonors", null);
-__decorate([
-    (0, common_1.Patch)('availability'),
-    (0, swagger_1.ApiOperation)({ summary: 'Update donor availability status' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Availability updated successfully' }),
-    (0, swagger_1.ApiResponse)({ status: 403, description: 'Only donors can update availability' }),
-    __param(0, (0, common_1.Request)()),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, request_dto_1.UpdateAvailabilityDto]),
-    __metadata("design:returntype", Promise)
-], RequestController.prototype, "updateAvailability", null);
 __decorate([
     (0, common_1.Get)('notifications'),
     (0, swagger_1.ApiOperation)({ summary: 'Get user notifications' }),

@@ -41,12 +41,14 @@ export declare class RequestService {
                 id: number;
                 name: string;
                 email: string;
+                phone: string;
                 userType: import("../dto/request.dto").UserType;
             };
             donor?: {
                 id: number;
                 name: string;
                 email: string;
+                phone: string;
                 userType: import("../dto/request.dto").UserType;
             };
         }[];
@@ -60,6 +62,7 @@ export declare class RequestService {
         };
     }>;
     acceptRequest(donorId: number, requestId: number, acceptDto: AcceptRequestDto): Promise<MilkRequestResponseDto>;
+    rejectRequest(donorId: number, requestId: number, rejectDto: AcceptRequestDto): Promise<MilkRequestResponseDto>;
     updateRequestStatus(userId: number, requestId: number, updateDto: UpdateMilkRequestDto): Promise<MilkRequestResponseDto>;
     searchDonors(requesterId: number, filters: DonorSearchFiltersDto): Promise<{
         data: DonorSearchResultDto[];
@@ -116,12 +119,14 @@ export declare class RequestService {
                 id: number;
                 name: string;
                 email: string;
+                phone: string;
                 userType: import("../dto/request.dto").UserType;
             };
             donor?: {
                 id: number;
                 name: string;
                 email: string;
+                phone: string;
                 userType: import("../dto/request.dto").UserType;
             };
         }[];

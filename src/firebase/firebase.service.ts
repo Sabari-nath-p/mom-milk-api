@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
+import { PrismaService } from '../prisma/prisma.service';
 
 export interface FCMNotificationPayload {
     title: string;
@@ -22,7 +23,7 @@ export class FirebaseService {
     private readonly logger = new Logger(FirebaseService.name);
     private app: admin.app.App;
 
-    constructor() {
+    constructor(private prisma: PrismaService) {
         this.initializeFirebase();
     }
 
@@ -32,7 +33,7 @@ export class FirebaseService {
             if (admin.apps.length === 0) {
                 // Try to use environment variables first, then fall back to service account file
                 const serviceAccount = this.getServiceAccountConfig();
-                
+
                 this.app = admin.initializeApp({
                     credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
                     projectId: serviceAccount.project_id,
@@ -161,7 +162,7 @@ export class FirebaseService {
 
             const response = await admin.messaging().sendEachForMulticast(message);
             this.logger.log(`Successfully sent multicast message to ${response.successCount} devices`);
-            
+
             if (response.failureCount > 0) {
                 this.logger.warn(`Failed to send to ${response.failureCount} devices`);
                 response.responses.forEach((resp, idx) => {
@@ -314,6 +315,52 @@ export class FirebaseService {
                 clickAction: 'REQUEST_ACCEPTED_CLICK',
             },
         });
+    }
+
+    /**
+     * Send request declined notification
+     */
+    async sendRequestDeclinedNotification(
+        requesterId: number,
+        requesterName: string,
+        donorName: string,
+        requestTitle: string,
+        reason?: string,
+    ): Promise<void> {
+        if (!this.app) {
+            console.warn('Firebase Admin SDK not initialized. Cannot send notification.');
+            return;
+        }
+
+        try {
+            // Get user's FCM token
+            const user = await this.prisma.user.findUnique({
+                where: { id: requesterId },
+                select: { fcmToken: true },
+            });
+
+            if (!user?.fcmToken) {
+                console.warn(`No FCM token found for user ${requesterId}`);
+                return;
+            }
+
+            await this.sendNotification({
+                token: user.fcmToken,
+                notification: {
+                    title: 'Request Declined ❌',
+                    body: `${donorName} has declined your milk request: "${requestTitle}". ${reason || 'No reason provided.'}`,
+                },
+                data: {
+                    type: 'REQUEST_DECLINED',
+                    donorName,
+                    requestTitle,
+                    reason: reason || '',
+                    clickAction: 'REQUEST_DECLINED_CLICK',
+                },
+            });
+        } catch (error) {
+            console.error('Error sending request declined notification:', error);
+        }
     }
 
     /**

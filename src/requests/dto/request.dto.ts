@@ -296,6 +296,7 @@ export class MilkRequestResponseDto {
         id: number;
         name: string;
         email: string;
+        phone: string;
         userType: UserType;
     };
 
@@ -304,6 +305,7 @@ export class MilkRequestResponseDto {
         id: number;
         name: string;
         email: string;
+        phone: string;
         userType: UserType;
     };
 }

@@ -42,6 +42,7 @@ let RequestService = class RequestService {
                         id: true,
                         name: true,
                         email: true,
+                        phone: true,
                         userType: true,
                     },
                 },
@@ -90,6 +91,7 @@ let RequestService = class RequestService {
                             id: true,
                             name: true,
                             email: true,
+                            phone: true,
                             userType: true,
                         },
                     },
@@ -98,6 +100,7 @@ let RequestService = class RequestService {
                             id: true,
                             name: true,
                             email: true,
+                            phone: true,
                             userType: true,
                         },
                     },
@@ -152,6 +155,7 @@ let RequestService = class RequestService {
                             id: true,
                             name: true,
                             email: true,
+                            phone: true,
                             userType: true,
                         },
                     },
@@ -194,6 +198,7 @@ let RequestService = class RequestService {
                         id: true,
                         name: true,
                         email: true,
+                        phone: true,
                         userType: true,
                     },
                 },
@@ -221,6 +226,7 @@ let RequestService = class RequestService {
                         id: true,
                         name: true,
                         email: true,
+                        phone: true,
                         userType: true,
                     },
                 },
@@ -229,6 +235,7 @@ let RequestService = class RequestService {
                         id: true,
                         name: true,
                         email: true,
+                        phone: true,
                         userType: true,
                     },
                 },
@@ -241,6 +248,80 @@ let RequestService = class RequestService {
             type: 'REQUEST_ACCEPTED',
             requestId: requestId,
         });
+        return this.formatRequestResponse(updatedRequest);
+    }
+    async rejectRequest(donorId, requestId, rejectDto) {
+        const donor = await this.prisma.user.findUnique({
+            where: { id: donorId },
+            select: { id: true, userType: true, zipcode: true, name: true },
+        });
+        if (!donor) {
+            throw new common_1.NotFoundException('Donor not found');
+        }
+        if (donor.userType !== client_1.UserType.DONOR) {
+            throw new common_1.ForbiddenException('Only donors can reject requests');
+        }
+        const request = await this.prisma.milkRequest.findUnique({
+            where: { id: requestId },
+            include: {
+                requester: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        userType: true,
+                    },
+                },
+            },
+        });
+        if (!request) {
+            throw new common_1.NotFoundException('Request not found');
+        }
+        if (request.status !== client_1.RequestStatus.PENDING) {
+            throw new common_1.BadRequestException('Request is no longer pending');
+        }
+        const updatedRequest = await this.prisma.milkRequest.update({
+            where: { id: requestId },
+            data: {
+                status: client_1.RequestStatus.DECLINED,
+                donorId: donorId,
+                donorZipcode: donor.zipcode,
+            },
+            include: {
+                requester: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        userType: true,
+                    },
+                },
+                donor: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        userType: true,
+                    },
+                },
+            },
+        });
+        await this.createNotification({
+            userId: request.requesterId,
+            title: 'Request Declined',
+            message: `${donor.name} has declined your milk request: "${request.title}". ${rejectDto.message || 'No reason provided.'}`,
+            type: 'REQUEST_DECLINED',
+            requestId: requestId,
+        });
+        try {
+            await this.firebaseService.sendRequestDeclinedNotification(request.requester.id, request.requester.name, donor.name, request.title, rejectDto.message || 'No reason provided');
+        }
+        catch (error) {
+            console.error('Failed to send Firebase notification:', error);
+        }
         return this.formatRequestResponse(updatedRequest);
     }
     async updateRequestStatus(userId, requestId, updateDto) {
@@ -506,6 +587,16 @@ let RequestService = class RequestService {
         if (!donor.isActive) {
             throw new common_1.BadRequestException('Donor account is not active');
         }
+        const existingPendingRequest = await this.prisma.milkRequest.findFirst({
+            where: {
+                requesterId: requesterId,
+                donorId: sendRequestDto.donorId,
+                status: client_1.RequestStatus.PENDING,
+            },
+        });
+        if (existingPendingRequest) {
+            throw new common_1.BadRequestException(`You already have a pending request to this donor. Please wait for them to respond or cancel your existing request first.`);
+        }
         const distance = await this.calculateRequestDistance(requester.zipcode, donor.zipcode);
         const requestData = {
             title: sendRequestDto.title,
@@ -530,6 +621,7 @@ let RequestService = class RequestService {
                         id: true,
                         name: true,
                         email: true,
+                        phone: true,
                         userType: true,
                     },
                 },
@@ -538,6 +630,7 @@ let RequestService = class RequestService {
                         id: true,
                         name: true,
                         email: true,
+                        phone: true,
                         userType: true,
                     },
                 },
