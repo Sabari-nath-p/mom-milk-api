@@ -23,11 +23,15 @@ let SleepLogsService = class SleepLogsService {
         if (!baby) {
             throw new common_1.NotFoundException(`Baby with ID ${createSleepLogDto.babyId} not found`);
         }
+        const startTime = new Date(createSleepLogDto.startTime);
+        const endTime = createSleepLogDto.endTime
+            ? new Date(createSleepLogDto.endTime)
+            : new Date(startTime.getTime() + 3 * 60 * 60 * 1000);
         const sleepLogData = {
             ...createSleepLogDto,
             date: new Date(createSleepLogDto.date),
-            startTime: new Date(createSleepLogDto.startTime),
-            endTime: new Date(createSleepLogDto.endTime),
+            startTime,
+            endTime,
         };
         return this.prisma.sleepLog.create({
             data: sleepLogData,

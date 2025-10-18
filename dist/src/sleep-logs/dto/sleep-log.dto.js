@@ -33,8 +33,9 @@ __decorate([
     __metadata("design:type", String)
 ], CreateSleepLogDto.prototype, "startTime", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: '2024-01-16T06:00:00.000Z' }),
+    (0, swagger_1.ApiProperty)({ example: '2024-01-16T06:00:00.000Z', required: false, description: 'End time (optional, defaults to 3 hours after start time)' }),
     (0, class_validator_1.IsDateString)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateSleepLogDto.prototype, "endTime", void 0);
 __decorate([

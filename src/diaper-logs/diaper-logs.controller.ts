@@ -17,7 +17,8 @@ import {
     ApiQuery,
 } from '@nestjs/swagger';
 import { DiaperLogsService } from './diaper-logs.service';
-import { CreateDiaperLogDto, UpdateDiaperLogDto, DiaperType } from './dto/diaper-log.dto';
+import { CreateDiaperLogDto, UpdateDiaperLogDto } from './dto/diaper-log.dto';
+import { DiaperType } from '@prisma/client';
 
 @ApiTags('diaper-logs')
 @Controller('diaper-logs')

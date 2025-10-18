@@ -38,6 +38,7 @@ enum DiaperType {
   SOLID
   LIQUID
   BOTH
+  EMPTY
 }
 
 enum SleepLocation {
@@ -128,7 +129,7 @@ model FeedLog {
   endTime     DateTime
   feedType    FeedType
   position    Position?
-  amount      Float?   // in ml or oz
+  amount      Float?   // Made optional (was already optional)
   note        String?
   
   // Relationships
@@ -162,8 +163,8 @@ model SleepLog {
   id           Int           @id @default(autoincrement())
   date         DateTime
   startTime    DateTime
-  endTime      DateTime
-  sleepQuality String?
+  endTime      DateTime?     // Made optional, will default to 3 hours later
+  sleepQuality String?       // Already optional
   location     SleepLocation
   note         String?
   

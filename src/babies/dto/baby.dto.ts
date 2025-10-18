@@ -1,11 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsEnum, IsDateString, IsOptional, IsNumber, IsPositive, IsInt } from 'class-validator';
+import { Gender } from '@prisma/client';
 
-export enum Gender {
-    BOY = 'BOY',
-    GIRL = 'GIRL',
-    OTHER = 'OTHER',
-}
+// Export analytics DTOs
+export * from './baby-analytics.dto';
 
 export class CreateBabyDto {
     @ApiProperty({ example: 'Emma Johnson' })

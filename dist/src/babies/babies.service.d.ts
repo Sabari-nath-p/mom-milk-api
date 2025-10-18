@@ -1,5 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateBabyDto, UpdateBabyDto, Gender } from './dto/baby.dto';
+import { CreateBabyDto, UpdateBabyDto } from './dto/baby.dto';
+import { Gender } from '@prisma/client';
 export declare class BabiesService {
     private prisma;
     constructor(prisma: PrismaService);
@@ -52,6 +53,7 @@ export declare class BabiesService {
             createdAt: Date;
             updatedAt: Date;
             id: number;
+            babyId: number;
             feedingDate: Date;
             startTime: Date;
             endTime: Date;
@@ -59,14 +61,13 @@ export declare class BabiesService {
             position: import(".prisma/client").$Enums.Position | null;
             amount: number | null;
             note: string | null;
-            babyId: number;
         }[];
         diaperLogs: {
             createdAt: Date;
             updatedAt: Date;
             id: number;
-            note: string | null;
             babyId: number;
+            note: string | null;
             date: Date;
             time: Date;
             diaperType: import(".prisma/client").$Enums.DiaperType;
@@ -75,10 +76,10 @@ export declare class BabiesService {
             createdAt: Date;
             updatedAt: Date;
             id: number;
-            startTime: Date;
-            endTime: Date;
-            note: string | null;
             babyId: number;
+            startTime: Date;
+            endTime: Date | null;
+            note: string | null;
             date: Date;
             sleepQuality: string | null;
             location: import(".prisma/client").$Enums.SleepLocation;

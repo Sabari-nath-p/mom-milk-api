@@ -17,9 +17,10 @@ export class CreateSleepLogDto {
     @IsDateString()
     startTime: string;
 
-    @ApiProperty({ example: '2024-01-16T06:00:00.000Z' })
+    @ApiProperty({ example: '2024-01-16T06:00:00.000Z', required: false, description: 'End time (optional, defaults to 3 hours after start time)' })
     @IsDateString()
-    endTime: string;
+    @IsOptional()
+    endTime?: string;
 
     @ApiProperty({ example: 'Deep sleep, peaceful night', required: false })
     @IsString()

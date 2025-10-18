@@ -9,15 +9,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateDiaperLogDto = exports.CreateDiaperLogDto = exports.DiaperType = void 0;
+exports.UpdateDiaperLogDto = exports.CreateDiaperLogDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
-var DiaperType;
-(function (DiaperType) {
-    DiaperType["SOLID"] = "SOLID";
-    DiaperType["LIQUID"] = "LIQUID";
-    DiaperType["BOTH"] = "BOTH";
-})(DiaperType || (exports.DiaperType = DiaperType = {}));
+const client_1 = require("@prisma/client");
 class CreateDiaperLogDto {
 }
 exports.CreateDiaperLogDto = CreateDiaperLogDto;
@@ -32,8 +27,8 @@ __decorate([
     __metadata("design:type", String)
 ], CreateDiaperLogDto.prototype, "time", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ enum: DiaperType, example: DiaperType.BOTH }),
-    (0, class_validator_1.IsEnum)(DiaperType),
+    (0, swagger_1.ApiProperty)({ enum: client_1.DiaperType, example: client_1.DiaperType.EMPTY }),
+    (0, class_validator_1.IsEnum)(client_1.DiaperType),
     __metadata("design:type", String)
 ], CreateDiaperLogDto.prototype, "diaperType", void 0);
 __decorate([
@@ -64,8 +59,8 @@ __decorate([
     __metadata("design:type", String)
 ], UpdateDiaperLogDto.prototype, "time", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ enum: DiaperType, example: DiaperType.BOTH, required: false }),
-    (0, class_validator_1.IsEnum)(DiaperType),
+    (0, swagger_1.ApiProperty)({ enum: client_1.DiaperType, example: client_1.DiaperType.EMPTY, required: false }),
+    (0, class_validator_1.IsEnum)(client_1.DiaperType),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateDiaperLogDto.prototype, "diaperType", void 0);

@@ -1,8 +1,4 @@
-export declare enum DiaperType {
-    SOLID = "SOLID",
-    LIQUID = "LIQUID",
-    BOTH = "BOTH"
-}
+import { DiaperType } from '@prisma/client';
 export declare class CreateDiaperLogDto {
     date: string;
     time: string;

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateDiaperLogDto, UpdateDiaperLogDto, DiaperType } from './dto/diaper-log.dto';
+import { CreateDiaperLogDto, UpdateDiaperLogDto } from './dto/diaper-log.dto';
+import { DiaperType } from '@prisma/client';
 import { PaginationDto, PaginatedResponse } from '../analytics/dto/analytics.dto';
 
 @Injectable()

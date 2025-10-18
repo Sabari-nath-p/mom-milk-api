@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BabiesModule = void 0;
 const common_1 = require("@nestjs/common");
 const babies_service_1 = require("./babies.service");
+const babies_analytics_service_1 = require("./babies-analytics.service");
 const babies_controller_1 = require("./babies.controller");
 const prisma_module_1 = require("../prisma/prisma.module");
 let BabiesModule = class BabiesModule {
@@ -18,8 +19,8 @@ exports.BabiesModule = BabiesModule = __decorate([
     (0, common_1.Module)({
         imports: [prisma_module_1.PrismaModule],
         controllers: [babies_controller_1.BabiesController],
-        providers: [babies_service_1.BabiesService],
-        exports: [babies_service_1.BabiesService],
+        providers: [babies_service_1.BabiesService, babies_analytics_service_1.BabiesAnalyticsService],
+        exports: [babies_service_1.BabiesService, babies_analytics_service_1.BabiesAnalyticsService],
     })
 ], BabiesModule);
 //# sourceMappingURL=babies.module.js.map

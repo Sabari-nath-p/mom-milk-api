@@ -1,5 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateDiaperLogDto, UpdateDiaperLogDto, DiaperType } from './dto/diaper-log.dto';
+import { CreateDiaperLogDto, UpdateDiaperLogDto } from './dto/diaper-log.dto';
+import { DiaperType } from '@prisma/client';
 import { PaginationDto, PaginatedResponse } from '../analytics/dto/analytics.dto';
 export declare class DiaperLogsService {
     private prisma;
@@ -19,8 +20,8 @@ export declare class DiaperLogsService {
         createdAt: Date;
         updatedAt: Date;
         id: number;
-        note: string | null;
         babyId: number;
+        note: string | null;
         date: Date;
         time: Date;
         diaperType: import(".prisma/client").$Enums.DiaperType;
@@ -40,8 +41,8 @@ export declare class DiaperLogsService {
         createdAt: Date;
         updatedAt: Date;
         id: number;
-        note: string | null;
         babyId: number;
+        note: string | null;
         date: Date;
         time: Date;
         diaperType: import(".prisma/client").$Enums.DiaperType;
@@ -61,8 +62,8 @@ export declare class DiaperLogsService {
         createdAt: Date;
         updatedAt: Date;
         id: number;
-        note: string | null;
         babyId: number;
+        note: string | null;
         date: Date;
         time: Date;
         diaperType: import(".prisma/client").$Enums.DiaperType;
@@ -71,8 +72,8 @@ export declare class DiaperLogsService {
         createdAt: Date;
         updatedAt: Date;
         id: number;
-        note: string | null;
         babyId: number;
+        note: string | null;
         date: Date;
         time: Date;
         diaperType: import(".prisma/client").$Enums.DiaperType;
@@ -81,8 +82,8 @@ export declare class DiaperLogsService {
         createdAt: Date;
         updatedAt: Date;
         id: number;
-        note: string | null;
         babyId: number;
+        note: string | null;
         date: Date;
         time: Date;
         diaperType: import(".prisma/client").$Enums.DiaperType;
@@ -97,8 +98,8 @@ export declare class DiaperLogsService {
         createdAt: Date;
         updatedAt: Date;
         id: number;
-        note: string | null;
         babyId: number;
+        note: string | null;
         date: Date;
         time: Date;
         diaperType: import(".prisma/client").$Enums.DiaperType;
@@ -118,8 +119,8 @@ export declare class DiaperLogsService {
         createdAt: Date;
         updatedAt: Date;
         id: number;
-        note: string | null;
         babyId: number;
+        note: string | null;
         date: Date;
         time: Date;
         diaperType: import(".prisma/client").$Enums.DiaperType;
@@ -128,8 +129,8 @@ export declare class DiaperLogsService {
         createdAt: Date;
         updatedAt: Date;
         id: number;
-        note: string | null;
         babyId: number;
+        note: string | null;
         date: Date;
         time: Date;
         diaperType: import(".prisma/client").$Enums.DiaperType;

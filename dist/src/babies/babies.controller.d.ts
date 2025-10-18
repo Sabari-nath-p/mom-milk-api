@@ -1,8 +1,11 @@
 import { BabiesService } from './babies.service';
-import { CreateBabyDto, UpdateBabyDto, Gender } from './dto/baby.dto';
+import { BabiesAnalyticsService } from './babies-analytics.service';
+import { CreateBabyDto, UpdateBabyDto, BabyAnalyticsRequestDto, BabyAnalyticsResponseDto } from './dto/baby.dto';
+import { Gender } from '@prisma/client';
 export declare class BabiesController {
     private readonly babiesService;
-    constructor(babiesService: BabiesService);
+    private readonly analyticsService;
+    constructor(babiesService: BabiesService, analyticsService: BabiesAnalyticsService);
     create(createBabyDto: CreateBabyDto): Promise<{
         user: {
             name: string;
@@ -121,6 +124,7 @@ export declare class BabiesController {
             createdAt: Date;
             updatedAt: Date;
             id: number;
+            babyId: number;
             feedingDate: Date;
             startTime: Date;
             endTime: Date;
@@ -128,14 +132,13 @@ export declare class BabiesController {
             position: import(".prisma/client").$Enums.Position | null;
             amount: number | null;
             note: string | null;
-            babyId: number;
         }[];
         diaperLogs: {
             createdAt: Date;
             updatedAt: Date;
             id: number;
-            note: string | null;
             babyId: number;
+            note: string | null;
             date: Date;
             time: Date;
             diaperType: import(".prisma/client").$Enums.DiaperType;
@@ -144,10 +147,10 @@ export declare class BabiesController {
             createdAt: Date;
             updatedAt: Date;
             id: number;
-            startTime: Date;
-            endTime: Date;
-            note: string | null;
             babyId: number;
+            startTime: Date;
+            endTime: Date | null;
+            note: string | null;
             date: Date;
             sleepQuality: string | null;
             location: import(".prisma/client").$Enums.SleepLocation;
@@ -196,4 +199,5 @@ export declare class BabiesController {
         userId: number;
     }>;
     removeAllByUserId(userId: number): Promise<import(".prisma/client").Prisma.BatchPayload>;
+    getBabyAnalytics(analyticsDto: BabyAnalyticsRequestDto): Promise<BabyAnalyticsResponseDto>;
 }

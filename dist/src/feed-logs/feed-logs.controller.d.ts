@@ -19,6 +19,7 @@ export declare class FeedLogsController {
         createdAt: Date;
         updatedAt: Date;
         id: number;
+        babyId: number;
         feedingDate: Date;
         startTime: Date;
         endTime: Date;
@@ -26,7 +27,6 @@ export declare class FeedLogsController {
         position: import(".prisma/client").$Enums.Position | null;
         amount: number | null;
         note: string | null;
-        babyId: number;
     }>;
     findAll(): Promise<({
         baby: {
@@ -43,6 +43,7 @@ export declare class FeedLogsController {
         createdAt: Date;
         updatedAt: Date;
         id: number;
+        babyId: number;
         feedingDate: Date;
         startTime: Date;
         endTime: Date;
@@ -50,12 +51,12 @@ export declare class FeedLogsController {
         position: import(".prisma/client").$Enums.Position | null;
         amount: number | null;
         note: string | null;
-        babyId: number;
     })[]>;
     findByBabyId(babyId: number): Promise<{
         createdAt: Date;
         updatedAt: Date;
         id: number;
+        babyId: number;
         feedingDate: Date;
         startTime: Date;
         endTime: Date;
@@ -63,12 +64,12 @@ export declare class FeedLogsController {
         position: import(".prisma/client").$Enums.Position | null;
         amount: number | null;
         note: string | null;
-        babyId: number;
     }[]>;
     findByBabyIdAndDateRange(babyId: number, startDate: string, endDate: string): Promise<{
         createdAt: Date;
         updatedAt: Date;
         id: number;
+        babyId: number;
         feedingDate: Date;
         startTime: Date;
         endTime: Date;
@@ -76,7 +77,6 @@ export declare class FeedLogsController {
         position: import(".prisma/client").$Enums.Position | null;
         amount: number | null;
         note: string | null;
-        babyId: number;
     }[]>;
     findByFeedType(feedType: FeedType): Promise<({
         baby: {
@@ -88,6 +88,7 @@ export declare class FeedLogsController {
         createdAt: Date;
         updatedAt: Date;
         id: number;
+        babyId: number;
         feedingDate: Date;
         startTime: Date;
         endTime: Date;
@@ -95,7 +96,6 @@ export declare class FeedLogsController {
         position: import(".prisma/client").$Enums.Position | null;
         amount: number | null;
         note: string | null;
-        babyId: number;
     })[]>;
     findOne(id: number): Promise<{
         baby: {
@@ -112,6 +112,7 @@ export declare class FeedLogsController {
         createdAt: Date;
         updatedAt: Date;
         id: number;
+        babyId: number;
         feedingDate: Date;
         startTime: Date;
         endTime: Date;
@@ -119,7 +120,6 @@ export declare class FeedLogsController {
         position: import(".prisma/client").$Enums.Position | null;
         amount: number | null;
         note: string | null;
-        babyId: number;
     }>;
     update(id: number, updateFeedLogDto: UpdateFeedLogDto): Promise<{
         baby: {
@@ -136,6 +136,7 @@ export declare class FeedLogsController {
         createdAt: Date;
         updatedAt: Date;
         id: number;
+        babyId: number;
         feedingDate: Date;
         startTime: Date;
         endTime: Date;
@@ -143,12 +144,12 @@ export declare class FeedLogsController {
         position: import(".prisma/client").$Enums.Position | null;
         amount: number | null;
         note: string | null;
-        babyId: number;
     }>;
     remove(id: number): Promise<{
         createdAt: Date;
         updatedAt: Date;
         id: number;
+        babyId: number;
         feedingDate: Date;
         startTime: Date;
         endTime: Date;
@@ -156,7 +157,6 @@ export declare class FeedLogsController {
         position: import(".prisma/client").$Enums.Position | null;
         amount: number | null;
         note: string | null;
-        babyId: number;
     }>;
     removeAllByBabyId(babyId: number): Promise<import(".prisma/client").Prisma.BatchPayload>;
     findAllPaginated(pagination: PaginationDto, startDate?: string, endDate?: string, babyId?: number): Promise<import("../analytics/dto/analytics.dto").PaginatedResponse<any>>;

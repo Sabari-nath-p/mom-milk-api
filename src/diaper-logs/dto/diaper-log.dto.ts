@@ -1,11 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDateString, IsEnum, IsOptional, IsString, IsInt, IsPositive } from 'class-validator';
-
-export enum DiaperType {
-    SOLID = 'SOLID',
-    LIQUID = 'LIQUID',
-    BOTH = 'BOTH',
-}
+import { DiaperType } from '@prisma/client';
 
 export class CreateDiaperLogDto {
     @ApiProperty({ example: '2024-01-15T00:00:00.000Z' })
@@ -16,7 +11,7 @@ export class CreateDiaperLogDto {
     @IsDateString()
     time: string;
 
-    @ApiProperty({ enum: DiaperType, example: DiaperType.BOTH })
+    @ApiProperty({ enum: DiaperType, example: DiaperType.EMPTY })
     @IsEnum(DiaperType)
     diaperType: DiaperType;
 
@@ -42,7 +37,7 @@ export class UpdateDiaperLogDto {
     @IsOptional()
     time?: string;
 
-    @ApiProperty({ enum: DiaperType, example: DiaperType.BOTH, required: false })
+    @ApiProperty({ enum: DiaperType, example: DiaperType.EMPTY, required: false })
     @IsEnum(DiaperType)
     @IsOptional()
     diaperType?: DiaperType;

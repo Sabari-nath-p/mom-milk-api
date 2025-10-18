@@ -16,10 +16,13 @@ exports.BabiesController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const babies_service_1 = require("./babies.service");
+const babies_analytics_service_1 = require("./babies-analytics.service");
 const baby_dto_1 = require("./dto/baby.dto");
+const client_1 = require("@prisma/client");
 let BabiesController = class BabiesController {
-    constructor(babiesService) {
+    constructor(babiesService, analyticsService) {
         this.babiesService = babiesService;
+        this.analyticsService = analyticsService;
     }
     create(createBabyDto) {
         return this.babiesService.create(createBabyDto);
@@ -50,6 +53,9 @@ let BabiesController = class BabiesController {
     }
     removeAllByUserId(userId) {
         return this.babiesService.removeAllByUserId(userId);
+    }
+    async getBabyAnalytics(analyticsDto) {
+        return this.analyticsService.getBabyAnalytics(analyticsDto);
     }
 };
 exports.BabiesController = BabiesController;
@@ -86,7 +92,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('gender/:gender'),
     (0, swagger_1.ApiOperation)({ summary: 'Get baby profiles by gender' }),
-    (0, swagger_1.ApiParam)({ name: 'gender', enum: baby_dto_1.Gender, description: 'Baby gender (BOY, GIRL, OTHER)' }),
+    (0, swagger_1.ApiParam)({ name: 'gender', enum: client_1.Gender, description: 'Baby gender (BOY, GIRL, OTHER)' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'List of baby profiles with specified gender' }),
     __param(0, (0, common_1.Param)('gender')),
     __metadata("design:type", Function),
@@ -160,9 +166,25 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", void 0)
 ], BabiesController.prototype, "removeAllByUserId", null);
+__decorate([
+    (0, common_1.Post)('analytics'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get comprehensive baby analytics for a date range' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Analytics data retrieved successfully',
+        type: baby_dto_1.BabyAnalyticsResponseDto
+    }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Baby not found' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid date range or baby ID' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [baby_dto_1.BabyAnalyticsRequestDto]),
+    __metadata("design:returntype", Promise)
+], BabiesController.prototype, "getBabyAnalytics", null);
 exports.BabiesController = BabiesController = __decorate([
     (0, swagger_1.ApiTags)('babies'),
     (0, common_1.Controller)('babies'),
-    __metadata("design:paramtypes", [babies_service_1.BabiesService])
+    __metadata("design:paramtypes", [babies_service_1.BabiesService,
+        babies_analytics_service_1.BabiesAnalyticsService])
 ], BabiesController);
 //# sourceMappingURL=babies.controller.js.map

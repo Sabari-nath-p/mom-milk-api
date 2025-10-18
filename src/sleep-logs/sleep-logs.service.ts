@@ -18,11 +18,17 @@ export class SleepLogsService {
         }
 
         // Convert date strings to Date objects
+        const startTime = new Date(createSleepLogDto.startTime);
+        // If endTime is not provided, default to 3 hours after startTime
+        const endTime = createSleepLogDto.endTime 
+            ? new Date(createSleepLogDto.endTime)
+            : new Date(startTime.getTime() + 3 * 60 * 60 * 1000);
+
         const sleepLogData = {
             ...createSleepLogDto,
             date: new Date(createSleepLogDto.date),
-            startTime: new Date(createSleepLogDto.startTime),
-            endTime: new Date(createSleepLogDto.endTime),
+            startTime,
+            endTime,
         };
 
         return this.prisma.sleepLog.create({

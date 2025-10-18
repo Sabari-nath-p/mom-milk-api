@@ -17,12 +17,22 @@ import {
     ApiQuery,
 } from '@nestjs/swagger';
 import { BabiesService } from './babies.service';
-import { CreateBabyDto, UpdateBabyDto, Gender } from './dto/baby.dto';
+import { BabiesAnalyticsService } from './babies-analytics.service';
+import { 
+    CreateBabyDto, 
+    UpdateBabyDto,
+    BabyAnalyticsRequestDto,
+    BabyAnalyticsResponseDto
+} from './dto/baby.dto';
+import { Gender } from '@prisma/client';
 
 @ApiTags('babies')
 @Controller('babies')
 export class BabiesController {
-    constructor(private readonly babiesService: BabiesService) { }
+    constructor(
+        private readonly babiesService: BabiesService,
+        private readonly analyticsService: BabiesAnalyticsService
+    ) { }
 
     @Post()
     @ApiOperation({ summary: 'Create a new baby profile' })
@@ -114,5 +124,18 @@ export class BabiesController {
     @ApiResponse({ status: 404, description: 'User not found' })
     removeAllByUserId(@Param('userId', ParseIntPipe) userId: number) {
         return this.babiesService.removeAllByUserId(userId);
+    }
+
+    @Post('analytics')
+    @ApiOperation({ summary: 'Get comprehensive baby analytics for a date range' })
+    @ApiResponse({ 
+        status: 200, 
+        description: 'Analytics data retrieved successfully',
+        type: BabyAnalyticsResponseDto 
+    })
+    @ApiResponse({ status: 404, description: 'Baby not found' })
+    @ApiResponse({ status: 400, description: 'Invalid date range or baby ID' })
+    async getBabyAnalytics(@Body() analyticsDto: BabyAnalyticsRequestDto): Promise<BabyAnalyticsResponseDto> {
+        return this.analyticsService.getBabyAnalytics(analyticsDto);
     }
 }

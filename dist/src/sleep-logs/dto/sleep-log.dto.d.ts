@@ -7,7 +7,7 @@ export declare enum SleepLocation {
 export declare class CreateSleepLogDto {
     date: string;
     startTime: string;
-    endTime: string;
+    endTime?: string;
     sleepQuality?: string;
     location: SleepLocation;
     note?: string;

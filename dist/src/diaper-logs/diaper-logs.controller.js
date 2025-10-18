@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const diaper_logs_service_1 = require("./diaper-logs.service");
 const diaper_log_dto_1 = require("./dto/diaper-log.dto");
+const client_1 = require("@prisma/client");
 let DiaperLogsController = class DiaperLogsController {
     constructor(diaperLogsService) {
         this.diaperLogsService = diaperLogsService;
@@ -98,7 +99,7 @@ __decorate([
 __decorate([
     (0, common_1.Get)('diaper-type/:diaperType'),
     (0, swagger_1.ApiOperation)({ summary: 'Get diaper logs by diaper type' }),
-    (0, swagger_1.ApiParam)({ name: 'diaperType', enum: diaper_log_dto_1.DiaperType, description: 'Diaper type (SOLID, LIQUID, BOTH)' }),
+    (0, swagger_1.ApiParam)({ name: 'diaperType', enum: client_1.DiaperType, description: 'Diaper type (SOLID, LIQUID, BOTH)' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'List of diaper logs with specified diaper type' }),
     __param(0, (0, common_1.Param)('diaperType')),
     __metadata("design:type", Function),

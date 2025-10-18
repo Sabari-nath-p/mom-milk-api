@@ -1,8 +1,5 @@
-export declare enum Gender {
-    BOY = "BOY",
-    GIRL = "GIRL",
-    OTHER = "OTHER"
-}
+import { Gender } from '@prisma/client';
+export * from './baby-analytics.dto';
 export declare class CreateBabyDto {
     name: string;
     gender: Gender;
