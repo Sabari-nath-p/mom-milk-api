@@ -507,6 +507,7 @@ export class RequestService {
                 id: true,
                 name: true,
                 email: true,
+                phone: true,
                 zipcode: true,
                 userType: true,
                 description: true,
@@ -518,9 +519,11 @@ export class RequestService {
                 receivedRequests: {
                     where: {
                         requesterId: requesterId,
-                        status: RequestStatus.ACCEPTED,
                     },
-                    select: { id: true },
+                    select: { 
+                        id: true,
+                        status: true,
+                    },
                 },
             },
         });
@@ -551,6 +554,9 @@ export class RequestService {
                     zipCodeData.country
                 ].filter(Boolean).join(', ') : 'Unknown location';
 
+                // Check if there's an accepted request to determine if phone should be shown
+                const hasAcceptedRequest = donor.receivedRequests.some(r => r.status === RequestStatus.ACCEPTED);
+
                 donorsWithDistance.push({
                     donor: {
                         id: donor.id,
@@ -567,7 +573,9 @@ export class RequestService {
                     },
                     distance: distance !== null ? distance : 999999, // Put unknown distances at the end
                     distanceText,
-                    hasAcceptedRequest: donor.receivedRequests.length > 0,
+                    hasAcceptedRequest: hasAcceptedRequest,
+                    hasPendingRequest: donor.receivedRequests.length > 0,
+                    donorPhoneNumber: hasAcceptedRequest ? donor.phone : null,
                     location: {
                         zipcode: donor.zipcode,
                         placeName: zipCodeData?.placeName || 'Unknown',

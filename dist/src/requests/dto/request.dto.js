@@ -319,6 +319,18 @@ __decorate([
     __metadata("design:type", Boolean)
 ], DonorSearchResultDto.prototype, "hasAcceptedRequest", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: true, description: 'Whether the user has already sent a request to this donor' }),
+    __metadata("design:type", Boolean)
+], DonorSearchResultDto.prototype, "hasPendingRequest", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        example: '+1234567890',
+        description: 'Donor phone number - only shown if donor has accepted a request from this user, otherwise null',
+        nullable: true
+    }),
+    __metadata("design:type", String)
+], DonorSearchResultDto.prototype, "donorPhoneNumber", void 0);
+__decorate([
     (0, swagger_1.ApiProperty)({ description: 'Complete location information with coordinates' }),
     __metadata("design:type", Object)
 ], DonorSearchResultDto.prototype, "location", void 0);

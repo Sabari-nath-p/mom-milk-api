@@ -261,6 +261,16 @@ export class DonorSearchResultDto {
     @ApiProperty({ example: false, description: 'Whether donor has accepted any pending request from this user' })
     hasAcceptedRequest: boolean;
 
+    @ApiProperty({ example: true, description: 'Whether the user has already sent a request to this donor' })
+    hasPendingRequest: boolean;
+
+    @ApiProperty({ 
+        example: '+1234567890', 
+        description: 'Donor phone number - only shown if donor has accepted a request from this user, otherwise null',
+        nullable: true 
+    })
+    donorPhoneNumber: string | null;
+
     @ApiProperty({ description: 'Complete location information with coordinates' })
     location: {
         zipcode: string;

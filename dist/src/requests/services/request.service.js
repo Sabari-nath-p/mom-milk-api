@@ -418,6 +418,7 @@ let RequestService = class RequestService {
                 id: true,
                 name: true,
                 email: true,
+                phone: true,
                 zipcode: true,
                 userType: true,
                 description: true,
@@ -429,9 +430,11 @@ let RequestService = class RequestService {
                 receivedRequests: {
                     where: {
                         requesterId: requesterId,
-                        status: client_1.RequestStatus.ACCEPTED,
                     },
-                    select: { id: true },
+                    select: {
+                        id: true,
+                        status: true,
+                    },
                 },
             },
         });
@@ -448,6 +451,7 @@ let RequestService = class RequestService {
                     zipCodeData.placeName,
                     zipCodeData.country
                 ].filter(Boolean).join(', ') : 'Unknown location';
+                const hasAcceptedRequest = donor.receivedRequests.some(r => r.status === client_1.RequestStatus.ACCEPTED);
                 donorsWithDistance.push({
                     donor: {
                         id: donor.id,
@@ -464,7 +468,9 @@ let RequestService = class RequestService {
                     },
                     distance: distance !== null ? distance : 999999,
                     distanceText,
-                    hasAcceptedRequest: donor.receivedRequests.length > 0,
+                    hasAcceptedRequest: hasAcceptedRequest,
+                    hasPendingRequest: donor.receivedRequests.length > 0,
+                    donorPhoneNumber: hasAcceptedRequest ? donor.phone : null,
                     location: {
                         zipcode: donor.zipcode,
                         placeName: zipCodeData?.placeName || 'Unknown',

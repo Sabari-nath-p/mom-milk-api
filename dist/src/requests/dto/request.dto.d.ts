@@ -83,6 +83,8 @@ export declare class DonorSearchResultDto {
     distance: number;
     distanceText: string;
     hasAcceptedRequest: boolean;
+    hasPendingRequest: boolean;
+    donorPhoneNumber: string | null;
     location: {
         zipcode: string;
         placeName: string;
