@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { PrismaService } from '../../prisma/prisma.service';
 import { GeolocationService } from './geolocation.service';
 import { FirebaseService } from '../../firebase/firebase.service';
+import { MailService } from '../../mail/mail.service';
 import {
     CreateMilkRequestDto,
     UpdateMilkRequestDto,
@@ -22,6 +23,7 @@ export class RequestService {
         private prisma: PrismaService,
         private geolocationService: GeolocationService,
         private firebaseService: FirebaseService,
+        private mailService: MailService,
     ) { }
 
     // Milk Request Management
@@ -220,7 +222,7 @@ export class RequestService {
     async acceptRequest(donorId: number, requestId: number, acceptDto: AcceptRequestDto): Promise<MilkRequestResponseDto> {
         const donor = await this.prisma.user.findUnique({
             where: { id: donorId },
-            select: { id: true, userType: true, zipcode: true, name: true },
+            select: { id: true, userType: true, zipcode: true, name: true, phone: true },
         });
 
         if (!donor) {
@@ -241,6 +243,7 @@ export class RequestService {
                         email: true,
                         phone: true,
                         userType: true,
+                        fcmToken: true,
                     },
                 },
             },
@@ -296,6 +299,33 @@ export class RequestService {
             type: 'REQUEST_ACCEPTED',
             requestId: requestId,
         });
+
+        // Send email notification to requester
+        try {
+            await this.mailService.sendRequestAcceptedEmail(
+                request.requester.email,
+                request.requester.name,
+                donor.name,
+                donor.phone || 'Not available',
+                request.title
+            );
+        } catch (error) {
+            console.error('Failed to send email notification:', error);
+        }
+
+        // Send FCM push notification to requester
+        if (request.requester.fcmToken) {
+            try {
+                await this.firebaseService.sendRequestAcceptedNotification(
+                    request.requester.fcmToken,
+                    donor.name,
+                    request.title,
+                    requestId
+                );
+            } catch (error) {
+                console.error('Failed to send FCM notification:', error);
+            }
+        }
 
         return this.formatRequestResponse(updatedRequest);
     }
@@ -721,7 +751,7 @@ export class RequestService {
         // Validate donor exists and is active
         const donor = await this.prisma.user.findUnique({
             where: { id: sendRequestDto.donorId },
-            select: { id: true, name: true, zipcode: true, userType: true, isActive: true, isAvailable: true },
+            select: { id: true, name: true, email: true, zipcode: true, userType: true, isActive: true, isAvailable: true, fcmToken: true },
         });
 
         if (!donor) {
@@ -803,6 +833,35 @@ export class RequestService {
             type: 'DIRECT_REQUEST',
             requestId: request.id,
         });
+
+        // Send email notification to donor
+        try {
+            await this.mailService.sendRequestNotificationEmail(
+                donor.email,
+                donor.name,
+                requester.name,
+                sendRequestDto.title,
+                sendRequestDto.description || '',
+                sendRequestDto.quantity,
+                sendRequestDto.urgency
+            );
+        } catch (error) {
+            console.error('Failed to send email notification to donor:', error);
+        }
+
+        // Send FCM push notification to donor
+        if (donor.fcmToken) {
+            try {
+                await this.firebaseService.sendMilkRequestNotification(
+                    donor.fcmToken,
+                    requester.name,
+                    sendRequestDto.title,
+                    request.id
+                );
+            } catch (error) {
+                console.error('Failed to send FCM notification to donor:', error);
+            }
+        }
 
         return this.formatRequestResponse(request);
     }
@@ -985,31 +1044,68 @@ export class RequestService {
     }
 
     private async notifyUsersOfAvailability(donorId: number, donorName: string) {
-        // Find users who have pending requests that could be fulfilled by this donor
-        const pendingRequests = await this.prisma.milkRequest.findMany({
+        // Find users who have accepted requests from this donor
+        const acceptedRequests = await this.prisma.milkRequest.findMany({
             where: {
-                status: RequestStatus.PENDING,
-                requestType: RequestType.MILK_REQUEST,
-                donorId: null,
+                donorId: donorId,
+                status: RequestStatus.ACCEPTED,
             },
-            select: {
-                requesterId: true,
-                title: true,
+            include: {
+                requester: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        fcmToken: true,
+                    },
+                },
             },
         });
 
-        // Create notifications for these users
-        const notifications = pendingRequests.map(request => ({
-            userId: request.requesterId,
-            title: 'Donor Available!',
-            message: `${donorName} is now available and might be able to help with your request: "${request.title}"`,
-            type: 'AVAILABILITY_UPDATE',
-        }));
-
-        if (notifications.length > 0) {
-            await this.prisma.requestNotification.createMany({
-                data: notifications,
+        // Create notifications and send emails for these users
+        for (const request of acceptedRequests) {
+            // Create in-app notification
+            await this.prisma.requestNotification.create({
+                data: {
+                    userId: request.requester.id,
+                    title: 'Donor Available!',
+                    message: `${donorName} is now available and might be able to help with your request: "${request.title}"`,
+                    type: 'AVAILABILITY_UPDATE',
+                    requestId: request.id,
+                },
             });
+
+            // Send email notification
+            try {
+                await this.mailService.sendAvailabilityNotificationEmail(
+                    request.requester.email,
+                    request.requester.name,
+                    donorName,
+                    request.title
+                );
+            } catch (error) {
+                console.error(`Failed to send availability email to ${request.requester.email}:`, error);
+            }
+
+            // Send FCM push notification if user has token
+            if (request.requester.fcmToken) {
+                try {
+                    await this.firebaseService.sendNotification({
+                        token: request.requester.fcmToken,
+                        notification: {
+                            title: 'Donor Available! 💝',
+                            body: `${donorName} is now available and might be able to help with your request: "${request.title}"`,
+                        },
+                        data: {
+                            type: 'AVAILABILITY_UPDATE',
+                            donorName: donorName,
+                            requestId: request.id.toString(),
+                        },
+                    });
+                } catch (error) {
+                    console.error(`Failed to send FCM notification to user ${request.requester.id}:`, error);
+                }
+            }
         }
     }
 }

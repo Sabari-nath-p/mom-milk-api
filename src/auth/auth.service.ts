@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import {
     SendOtpDto,
     VerifyOtpDto,
@@ -22,6 +23,7 @@ export class AuthService {
     constructor(
         private prisma: PrismaService,
         private jwtService: JwtService,
+        private mailService: MailService,
     ) { }
 
     async sendOtp(sendOtpDto: SendOtpDto): Promise<OtpResponseDto> {
@@ -44,7 +46,7 @@ export class AuthService {
 
             // Try to send email (don't fail if SMTP fails)
             try {
-                await this.sendOtpEmail(email, otp);
+                await this.mailService.sendOtpEmail(email, otp);
                 return {
                     success: true,
                     message: 'OTP sent successfully to your email',
@@ -274,17 +276,6 @@ export class AuthService {
     // Private helper methods
     private generateOtp(): string {
         return Math.floor(100000 + Math.random() * 900000).toString();
-    }
-
-    private async sendOtpEmail(email: string, otp: string): Promise<void> {
-        // Implement email sending logic here
-        // This is a placeholder - you would integrate with your email service (NodeMailer, SendGrid, etc.)
-        console.log(`Sending OTP ${otp} to ${email}`);
-
-        // Simulate email sending - remove this in production
-        if (Math.random() > 0.7) {
-            throw new Error('Simulated email failure');
-        }
     }
 
     private async incrementOtpAttempts(email: string): Promise<void> {
