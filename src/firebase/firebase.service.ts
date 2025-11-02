@@ -384,4 +384,59 @@ export class FirebaseService {
             },
         );
     }
+
+    /**
+     * Send custom notification to user by phone number
+     */
+    async sendCustomNotificationByPhone(
+        phone: string,
+        title: string,
+        body: string,
+    ): Promise<{ userId: number; phone: string }> {
+        if (!this.app) {
+            throw new Error('Firebase Admin SDK not initialized. Cannot send notification.');
+        }
+
+        try {
+            // Find user by phone number
+            const user = await this.prisma.user.findFirst({
+                where: { phone: phone },
+                select: { id: true, phone: true, fcmToken: true, name: true },
+            });
+
+            if (!user) {
+                throw new Error(`User not found with phone number: ${phone}`);
+            }
+
+            if (!user.fcmToken) {
+                throw new Error(`No FCM token registered for user: ${user.name} (${phone})`);
+            }
+
+            this.logger.log(`Sending custom notification to user ${user.name} (ID: ${user.id}, Phone: ${phone})`);
+
+            // Send notification
+            await this.sendNotification({
+                token: user.fcmToken,
+                notification: {
+                    title: title,
+                    body: body,
+                },
+                data: {
+                    type: 'CUSTOM_NOTIFICATION',
+                    phone: phone,
+                    clickAction: 'CUSTOM_NOTIFICATION_CLICK',
+                },
+            });
+
+            this.logger.log(`Custom notification sent successfully to ${user.name}`);
+
+            return {
+                userId: user.id,
+                phone: user.phone,
+            };
+        } catch (error) {
+            this.logger.error(`Error sending custom notification to phone ${phone}:`, error);
+            throw error;
+        }
+    }
 }
