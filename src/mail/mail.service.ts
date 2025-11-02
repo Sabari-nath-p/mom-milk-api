@@ -72,7 +72,7 @@ export class MailService {
 
         try {
             const mailOptions = {
-                from: `"Mom Milk App" <${process.env.SMTP_USER}>`,
+                from: `"MomsMilk App" <${process.env.SMTP_USER}>`,
                 to: options.to,
                 subject: options.subject,
                 text: options.text,
@@ -89,7 +89,7 @@ export class MailService {
     }
 
     async sendOtpEmail(email: string, otp: string): Promise<boolean> {
-        const subject = 'Your OTP for Mom Milk App';
+        const subject = 'Your OTP for MomsMilk App';
         const html = `
             <!DOCTYPE html>
             <html>
@@ -106,18 +106,18 @@ export class MailService {
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>🍼 Mom Milk App</h1>
+                        <h1>🍼 MomsMilk App</h1>
                     </div>
                     <div class="content">
                         <h2>Your One-Time Password</h2>
                         <p>Hello,</p>
-                        <p>You have requested to sign in to Mom Milk App. Please use the following OTP to complete your authentication:</p>
+                        <p>You have requested to sign in to MomsMilk App. Please use the following OTP to complete your authentication:</p>
                         <div class="otp-box">${otp}</div>
                         <p><strong>This OTP is valid for 5 minutes.</strong></p>
                         <p>If you didn't request this OTP, please ignore this email.</p>
                         <div class="footer">
                             <p>This is an automated message, please do not reply.</p>
-                            <p>&copy; ${new Date().getFullYear()} Mom Milk App. All rights reserved.</p>
+                            <p>&copy; ${new Date().getFullYear()} MomsMilk App. All rights reserved.</p>
                         </div>
                     </div>
                 </div>
@@ -125,7 +125,7 @@ export class MailService {
             </html>
         `;
 
-        const text = `Your OTP for Mom Milk App is: ${otp}\n\nThis OTP is valid for 5 minutes.\n\nIf you didn't request this OTP, please ignore this email.`;
+        const text = `Your OTP for MomsMilk App is: ${otp}\n\nThis OTP is valid for 5 minutes.\n\nIf you didn't request this OTP, please ignore this email.`;
 
         return this.sendEmail({ to: email, subject, html, text });
     }
@@ -182,10 +182,10 @@ export class MailService {
                                 <span class="urgency-badge urgency-${urgency.toLowerCase()}">${urgency.toUpperCase()}</span>
                             </div>
                         </div>
-                        <p>Please log in to the Mom Milk App to review and respond to this request.</p>
+                        <p>Please log in to the MomsMilk App to review and respond to this request.</p>
                         <div class="footer">
                             <p>This is an automated message, please do not reply.</p>
-                            <p>&copy; ${new Date().getFullYear()} Mom Milk App. All rights reserved.</p>
+                            <p>&copy; ${new Date().getFullYear()} MomsMilk App. All rights reserved.</p>
                         </div>
                     </div>
                 </div>
@@ -193,7 +193,7 @@ export class MailService {
             </html>
         `;
 
-        const text = `Hello ${donorName},\n\n${requesterName} has sent you a new milk request:\n\nRequest: ${requestTitle}\nDescription: ${requestDescription || 'No description provided'}\nQuantity: ${quantity} ml\nUrgency: ${urgency.toUpperCase()}\n\nPlease log in to the Mom Milk App to review and respond to this request.`;
+        const text = `Hello ${donorName},\n\n${requesterName} has sent you a new milk request:\n\nRequest: ${requestTitle}\nDescription: ${requestDescription || 'No description provided'}\nQuantity: ${quantity} ml\nUrgency: ${urgency.toUpperCase()}\n\nPlease log in to the MomsMilk App to review and respond to this request.`;
 
         return this.sendEmail({ to: donorEmail, subject, html, text });
     }
@@ -242,10 +242,10 @@ export class MailService {
                             </div>
                         </div>
                         <p>You can now contact the donor directly to arrange the pickup or delivery.</p>
-                        <p>Please log in to the Mom Milk App for more details.</p>
+                        <p>Please log in to the MomsMilk App for more details.</p>
                         <div class="footer">
                             <p>This is an automated message, please do not reply.</p>
-                            <p>&copy; ${new Date().getFullYear()} Mom Milk App. All rights reserved.</p>
+                            <p>&copy; ${new Date().getFullYear()} MomsMilk App. All rights reserved.</p>
                         </div>
                     </div>
                 </div>
@@ -253,7 +253,7 @@ export class MailService {
             </html>
         `;
 
-        const text = `Great News, ${buyerName}!\n\n${donorName} has accepted your milk request: "${requestTitle}"\n\nDonor Contact Information:\nName: ${donorName}\nPhone: ${donorPhone}\n\nYou can now contact the donor directly to arrange the pickup or delivery.\n\nPlease log in to the Mom Milk App for more details.`;
+        const text = `Great News, ${buyerName}!\n\n${donorName} has accepted your milk request: "${requestTitle}"\n\nDonor Contact Information:\nName: ${donorName}\nPhone: ${donorPhone}\n\nYou can now contact the donor directly to arrange the pickup or delivery.\n\nPlease log in to the MomsMilk App for more details.`;
 
         return this.sendEmail({ to: buyerEmail, subject, html, text });
     }
@@ -289,10 +289,10 @@ export class MailService {
                             <p><strong>${donorName}</strong> is now available and might be able to help with your request: <strong>"${requestTitle}"</strong></p>
                         </div>
                         <p>This is a great opportunity to reach out to the donor through the app.</p>
-                        <p>Please log in to the Mom Milk App to check the latest status and connect with the donor.</p>
+                        <p>Please log in to the MomsMilk App to check the latest status and connect with the donor.</p>
                         <div class="footer">
                             <p>This is an automated message, please do not reply.</p>
-                            <p>&copy; ${new Date().getFullYear()} Mom Milk App. All rights reserved.</p>
+                            <p>&copy; ${new Date().getFullYear()} MomsMilk App. All rights reserved.</p>
                         </div>
                     </div>
                 </div>
@@ -300,7 +300,7 @@ export class MailService {
             </html>
         `;
 
-        const text = `Hello ${buyerName},\n\n${donorName} is now available and might be able to help with your request: "${requestTitle}"\n\nThis is a great opportunity to reach out to the donor through the app.\n\nPlease log in to the Mom Milk App to check the latest status and connect with the donor.`;
+        const text = `Hello ${buyerName},\n\n${donorName} is now available and might be able to help with your request: "${requestTitle}"\n\nThis is a great opportunity to reach out to the donor through the app.\n\nPlease log in to the MomsMilk App to check the latest status and connect with the donor.`;
 
         return this.sendEmail({ to: buyerEmail, subject, html, text });
     }
