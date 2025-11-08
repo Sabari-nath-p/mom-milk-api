@@ -79,9 +79,13 @@ model User {
   description            String?
   bloodGroup            String?
   babyDeliveryDate      DateTime?
-  healthStyle           String?  // JSON string array
+  healthStyle           String?  // JSON string array - optional
   ableToShareMedicalRecord Boolean? @default(false)
   isAvailable           Boolean? @default(true) // For donors - availability status
+  
+  // Social media links (optional for all users)
+  facebookLink          String?
+  instagramLink         String?
   
   // Relationships
   babies    Baby[]

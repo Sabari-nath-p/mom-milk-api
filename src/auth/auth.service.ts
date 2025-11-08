@@ -159,12 +159,22 @@ export class AuthService {
             lastLoginAt: new Date(),
         };
 
+        // Add social media links if provided (for all user types)
+        if (completeProfileDto.facebookLink) {
+            userData.facebookLink = completeProfileDto.facebookLink;
+        }
+        if (completeProfileDto.instagramLink) {
+            userData.instagramLink = completeProfileDto.instagramLink;
+        }
+
         // Add donor-specific fields if user type is DONOR
         if (completeProfileDto.userType === UserType.DONOR) {
             userData.description = completeProfileDto.description;
             userData.bloodGroup = completeProfileDto.bloodGroup;
             userData.babyDeliveryDate = completeProfileDto.babyDeliveryDate ? new Date(completeProfileDto.babyDeliveryDate) : null;
-            userData.healthStyle = completeProfileDto.healthStyle;
+            if (completeProfileDto.healthStyle) {
+                userData.healthStyle = completeProfileDto.healthStyle;
+            }
             userData.ableToShareMedicalRecord = completeProfileDto.ableToShareMedicalRecord || false;
         }
 
@@ -191,6 +201,10 @@ export class AuthService {
         if (updateData.phone) updatePayload.phone = updateData.phone;
         if (updateData.zipcode) updatePayload.zipcode = updateData.zipcode;
         if (updateData.userType) updatePayload.userType = updateData.userType;
+
+        // Social media links (for all user types)
+        if (updateData.facebookLink !== undefined) updatePayload.facebookLink = updateData.facebookLink;
+        if (updateData.instagramLink !== undefined) updatePayload.instagramLink = updateData.instagramLink;
 
         // Donor fields
         if (updateData.description !== undefined) updatePayload.description = updateData.description;

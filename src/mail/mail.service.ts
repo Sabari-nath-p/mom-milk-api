@@ -45,7 +45,7 @@ export class MailService {
 
             this.isConfigured = true;
             this.logger.log('SMTP transporter initialized successfully');
-            
+
             // Verify SMTP connection
             this.verifyConnection();
         } catch (error) {
@@ -137,9 +137,28 @@ export class MailService {
         requestTitle: string,
         requestDescription: string,
         quantity: number,
-        urgency: string
+        urgency: string,
+        requesterFacebookLink?: string,
+        requesterInstagramLink?: string
     ): Promise<boolean> {
         const subject = '🍼 New Milk Request Received';
+        
+        // Build social links HTML if available
+        let socialLinksHtml = '';
+        if (requesterFacebookLink || requesterInstagramLink) {
+            socialLinksHtml = '<div class="detail-row"><span class="label">Requester Social:</span> ';
+            if (requesterFacebookLink) {
+                socialLinksHtml += `<a href="${requesterFacebookLink}" target="_blank">Facebook</a>`;
+            }
+            if (requesterFacebookLink && requesterInstagramLink) {
+                socialLinksHtml += ' | ';
+            }
+            if (requesterInstagramLink) {
+                socialLinksHtml += `<a href="${requesterInstagramLink}" target="_blank">Instagram</a>`;
+            }
+            socialLinksHtml += '</div>';
+        }
+        
         const html = `
             <!DOCTYPE html>
             <html>
@@ -157,6 +176,8 @@ export class MailService {
                     .urgency-medium { background-color: #ffaa00; color: white; }
                     .urgency-low { background-color: #44aa44; color: white; }
                     .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #777; }
+                    a { color: #FF69B4; text-decoration: none; }
+                    a:hover { text-decoration: underline; }
                 </style>
             </head>
             <body>
@@ -181,6 +202,7 @@ export class MailService {
                                 <span class="label">Urgency:</span> 
                                 <span class="urgency-badge urgency-${urgency.toLowerCase()}">${urgency.toUpperCase()}</span>
                             </div>
+                            ${socialLinksHtml}
                         </div>
                         <p>Please log in to the MomsMilk App to review and respond to this request.</p>
                         <div class="footer">
@@ -193,7 +215,14 @@ export class MailService {
             </html>
         `;
 
-        const text = `Hello ${donorName},\n\n${requesterName} has sent you a new milk request:\n\nRequest: ${requestTitle}\nDescription: ${requestDescription || 'No description provided'}\nQuantity: ${quantity} ml\nUrgency: ${urgency.toUpperCase()}\n\nPlease log in to the MomsMilk App to review and respond to this request.`;
+        let socialLinksText = '';
+        if (requesterFacebookLink || requesterInstagramLink) {
+            socialLinksText = '\nRequester Social:';
+            if (requesterFacebookLink) socialLinksText += `\nFacebook: ${requesterFacebookLink}`;
+            if (requesterInstagramLink) socialLinksText += `\nInstagram: ${requesterInstagramLink}`;
+        }
+
+        const text = `Hello ${donorName},\n\n${requesterName} has sent you a new milk request:\n\nRequest: ${requestTitle}\nDescription: ${requestDescription || 'No description provided'}\nQuantity: ${quantity} ml\nUrgency: ${urgency.toUpperCase()}${socialLinksText}\n\nPlease log in to the MomsMilk App to review and respond to this request.`;
 
         return this.sendEmail({ to: donorEmail, subject, html, text });
     }
@@ -203,9 +232,24 @@ export class MailService {
         buyerName: string,
         donorName: string,
         donorPhone: string,
-        requestTitle: string
+        requestTitle: string,
+        donorEmail?: string,
+        donorFacebookLink?: string,
+        donorInstagramLink?: string
     ): Promise<boolean> {
         const subject = '✅ Your Request Has Been Accepted!';
+        
+        // Build social links HTML if available
+        let socialLinksHtml = '';
+        if (donorEmail || donorFacebookLink || donorInstagramLink) {
+            socialLinksHtml = '<div class="detail-row"><span class="label">Connect:</span> ';
+            const links = [];
+            if (donorEmail) links.push(`<a href="mailto:${donorEmail}">Email</a>`);
+            if (donorFacebookLink) links.push(`<a href="${donorFacebookLink}" target="_blank">Facebook</a>`);
+            if (donorInstagramLink) links.push(`<a href="${donorInstagramLink}" target="_blank">Instagram</a>`);
+            socialLinksHtml += links.join(' | ') + '</div>';
+        }
+        
         const html = `
             <!DOCTYPE html>
             <html>
@@ -220,6 +264,8 @@ export class MailService {
                     .detail-row { margin: 10px 0; }
                     .label { font-weight: bold; color: #666; }
                     .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #777; }
+                    a { color: #44aa44; text-decoration: none; }
+                    a:hover { text-decoration: underline; }
                 </style>
             </head>
             <body>
@@ -240,6 +286,7 @@ export class MailService {
                             <div class="detail-row">
                                 <span class="label">Phone:</span> ${donorPhone}
                             </div>
+                            ${socialLinksHtml}
                         </div>
                         <p>You can now contact the donor directly to arrange the pickup or delivery.</p>
                         <p>Please log in to the MomsMilk App for more details.</p>
@@ -253,7 +300,15 @@ export class MailService {
             </html>
         `;
 
-        const text = `Great News, ${buyerName}!\n\n${donorName} has accepted your milk request: "${requestTitle}"\n\nDonor Contact Information:\nName: ${donorName}\nPhone: ${donorPhone}\n\nYou can now contact the donor directly to arrange the pickup or delivery.\n\nPlease log in to the MomsMilk App for more details.`;
+        let socialLinksText = '';
+        if (donorEmail || donorFacebookLink || donorInstagramLink) {
+            socialLinksText = '\n\nConnect with donor:';
+            if (donorEmail) socialLinksText += `\nEmail: ${donorEmail}`;
+            if (donorFacebookLink) socialLinksText += `\nFacebook: ${donorFacebookLink}`;
+            if (donorInstagramLink) socialLinksText += `\nInstagram: ${donorInstagramLink}`;
+        }
+
+        const text = `Great News, ${buyerName}!\n\n${donorName} has accepted your milk request: "${requestTitle}"\n\nDonor Contact Information:\nName: ${donorName}\nPhone: ${donorPhone}${socialLinksText}\n\nYou can now contact the donor directly to arrange the pickup or delivery.\n\nPlease log in to the MomsMilk App for more details.`;
 
         return this.sendEmail({ to: buyerEmail, subject, html, text });
     }
@@ -262,9 +317,39 @@ export class MailService {
         buyerEmail: string,
         buyerName: string,
         donorName: string,
-        requestTitle: string
+        requestTitle: string,
+        donorEmail?: string,
+        donorFacebookLink?: string,
+        donorInstagramLink?: string
     ): Promise<boolean> {
         const subject = '💝 Donor is Now Available!';
+
+        // Build contact section if any contact info is provided
+        let contactHtml = '';
+        let contactText = '';
+        if (donorEmail || donorFacebookLink || donorInstagramLink) {
+            contactHtml = `
+                <div style="background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #FF69B4;">Connect with ${donorName}:</h3>
+            `;
+            contactText = `\n\nConnect with ${donorName}:\n`;
+
+            if (donorEmail) {
+                contactHtml += `<p style="margin: 10px 0;">📧 <strong>Email:</strong> <a href="mailto:${donorEmail}" style="color: #FF69B4;">${donorEmail}</a></p>`;
+                contactText += `Email: ${donorEmail}\n`;
+            }
+            if (donorFacebookLink) {
+                contactHtml += `<p style="margin: 10px 0;">📘 <strong>Facebook:</strong> <a href="${donorFacebookLink}" style="color: #FF69B4;" target="_blank">View Profile</a></p>`;
+                contactText += `Facebook: ${donorFacebookLink}\n`;
+            }
+            if (donorInstagramLink) {
+                contactHtml += `<p style="margin: 10px 0;">📸 <strong>Instagram:</strong> <a href="${donorInstagramLink}" style="color: #FF69B4;" target="_blank">View Profile</a></p>`;
+                contactText += `Instagram: ${donorInstagramLink}\n`;
+            }
+
+            contactHtml += `</div>`;
+        }
+
         const html = `
             <!DOCTYPE html>
             <html>
@@ -288,7 +373,8 @@ export class MailService {
                         <div class="notification-box">
                             <p><strong>${donorName}</strong> is now available and might be able to help with your request: <strong>"${requestTitle}"</strong></p>
                         </div>
-                        <p>This is a great opportunity to reach out to the donor through the app.</p>
+                        ${contactHtml}
+                        <p>This is a great opportunity to reach out to the donor${contactHtml ? '' : ' through the app'}.</p>
                         <p>Please log in to the MomsMilk App to check the latest status and connect with the donor.</p>
                         <div class="footer">
                             <p>This is an automated message, please do not reply.</p>
@@ -300,7 +386,7 @@ export class MailService {
             </html>
         `;
 
-        const text = `Hello ${buyerName},\n\n${donorName} is now available and might be able to help with your request: "${requestTitle}"\n\nThis is a great opportunity to reach out to the donor through the app.\n\nPlease log in to the MomsMilk App to check the latest status and connect with the donor.`;
+        const text = `Hello ${buyerName},\n\n${donorName} is now available and might be able to help with your request: "${requestTitle}"${contactText}\n\nThis is a great opportunity to reach out to the donor${contactText ? '' : ' through the app'}.\n\nPlease log in to the MomsMilk App to check the latest status and connect with the donor.`;
 
         return this.sendEmail({ to: buyerEmail, subject, html, text });
     }

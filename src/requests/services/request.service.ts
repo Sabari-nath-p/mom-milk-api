@@ -222,7 +222,7 @@ export class RequestService {
     async acceptRequest(donorId: number, requestId: number, acceptDto: AcceptRequestDto): Promise<MilkRequestResponseDto> {
         const donor = await this.prisma.user.findUnique({
             where: { id: donorId },
-            select: { id: true, userType: true, zipcode: true, name: true, phone: true },
+            select: { id: true, userType: true, zipcode: true, name: true, phone: true, email: true, facebookLink: true, instagramLink: true },
         });
 
         if (!donor) {
@@ -307,7 +307,10 @@ export class RequestService {
                 request.requester.name,
                 donor.name,
                 donor.phone || 'Not available',
-                request.title
+                request.title,
+                donor.email,
+                donor.facebookLink,
+                donor.instagramLink
             );
         } catch (error) {
             console.error('Failed to send email notification:', error);
@@ -550,7 +553,7 @@ export class RequestService {
                     where: {
                         requesterId: requesterId,
                     },
-                    select: { 
+                    select: {
                         id: true,
                         status: true,
                     },
@@ -741,7 +744,7 @@ export class RequestService {
         // Validate requester exists
         const requester = await this.prisma.user.findUnique({
             where: { id: requesterId },
-            select: { id: true, name: true, zipcode: true, userType: true },
+            select: { id: true, name: true, zipcode: true, userType: true, facebookLink: true, instagramLink: true },
         });
 
         if (!requester) {
@@ -843,7 +846,9 @@ export class RequestService {
                 sendRequestDto.title,
                 sendRequestDto.description || '',
                 sendRequestDto.quantity,
-                sendRequestDto.urgency
+                sendRequestDto.urgency,
+                requester.facebookLink,
+                requester.instagramLink
             );
         } catch (error) {
             console.error('Failed to send email notification to donor:', error);
@@ -1044,6 +1049,16 @@ export class RequestService {
     }
 
     private async notifyUsersOfAvailability(donorId: number, donorName: string) {
+        // Get donor's contact information
+        const donor = await this.prisma.user.findUnique({
+            where: { id: donorId },
+            select: {
+                email: true,
+                facebookLink: true,
+                instagramLink: true,
+            },
+        });
+
         // Find users who have accepted requests from this donor
         const acceptedRequests = await this.prisma.milkRequest.findMany({
             where: {
@@ -1075,13 +1090,16 @@ export class RequestService {
                 },
             });
 
-            // Send email notification
+            // Send email notification with donor contact info
             try {
                 await this.mailService.sendAvailabilityNotificationEmail(
                     request.requester.email,
                     request.requester.name,
                     donorName,
-                    request.title
+                    request.title,
+                    donor?.email,
+                    donor?.facebookLink,
+                    donor?.instagramLink
                 );
             } catch (error) {
                 console.error(`Failed to send availability email to ${request.requester.email}:`, error);

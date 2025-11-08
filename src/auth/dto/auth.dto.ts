@@ -61,6 +61,17 @@ export class CompleteProfileDto {
     @IsOptional()
     @IsBoolean()
     ableToShareMedicalRecord?: boolean;
+
+    // Social media links (optional for all users)
+    @ApiPropertyOptional({ example: 'https://facebook.com/username', description: 'Facebook profile link' })
+    @IsOptional()
+    @IsString()
+    facebookLink?: string;
+
+    @ApiPropertyOptional({ example: 'https://instagram.com/username', description: 'Instagram profile link' })
+    @IsOptional()
+    @IsString()
+    instagramLink?: string;
 }
 
 export class UpdateFcmTokenDto {

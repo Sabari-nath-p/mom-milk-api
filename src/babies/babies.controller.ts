@@ -8,6 +8,9 @@ import {
     Delete,
     ParseIntPipe,
     Query,
+    UseGuards,
+    Request,
+    ForbiddenException,
 } from '@nestjs/common';
 import {
     ApiTags,
@@ -15,6 +18,7 @@ import {
     ApiResponse,
     ApiParam,
     ApiQuery,
+    ApiBearerAuth,
 } from '@nestjs/swagger';
 import { BabiesService } from './babies.service';
 import { BabiesAnalyticsService } from './babies-analytics.service';
@@ -25,6 +29,7 @@ import {
     BabyAnalyticsResponseDto
 } from './dto/baby.dto';
 import { Gender } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('babies')
 @Controller('babies')
@@ -51,11 +56,19 @@ export class BabiesController {
     }
 
     @Get('user/:userId')
-    @ApiOperation({ summary: 'Get all baby profiles for a specific user' })
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get all baby profiles for a specific user (authenticated users only)' })
     @ApiParam({ name: 'userId', description: 'User ID' })
     @ApiResponse({ status: 200, description: 'List of baby profiles for the user' })
+    @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired token' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Can only access your own babies' })
     @ApiResponse({ status: 404, description: 'User not found' })
-    findByUserId(@Param('userId', ParseIntPipe) userId: number) {
+    findByUserId(@Param('userId', ParseIntPipe) userId: number, @Request() req) {
+        // Ensure the authenticated user can only access their own babies
+        if (req.user.userId !== userId) {
+            throw new ForbiddenException('You can only access your own baby profiles');
+        }
         return this.babiesService.findByUserId(userId);
     }
 
