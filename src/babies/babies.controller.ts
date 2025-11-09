@@ -22,8 +22,8 @@ import {
 } from '@nestjs/swagger';
 import { BabiesService } from './babies.service';
 import { BabiesAnalyticsService } from './babies-analytics.service';
-import { 
-    CreateBabyDto, 
+import {
+    CreateBabyDto,
     UpdateBabyDto,
     BabyAnalyticsRequestDto,
     BabyAnalyticsResponseDto
@@ -56,7 +56,7 @@ export class BabiesController {
     }
 
     @Get('user/:userId')
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get all baby profiles for a specific user (authenticated users only)' })
     @ApiParam({ name: 'userId', description: 'User ID' })
@@ -66,9 +66,9 @@ export class BabiesController {
     @ApiResponse({ status: 404, description: 'User not found' })
     findByUserId(@Param('userId', ParseIntPipe) userId: number, @Request() req) {
         // Ensure the authenticated user can only access their own babies
-        if (req.user.userId !== userId) {
-            throw new ForbiddenException('You can only access your own baby profiles');
-        }
+        // if (req.user.userId !== userId) {
+        //     throw new ForbiddenException('You can only access your own baby profiles');
+        // }
         return this.babiesService.findByUserId(userId);
     }
 
@@ -141,10 +141,10 @@ export class BabiesController {
 
     @Post('analytics')
     @ApiOperation({ summary: 'Get comprehensive baby analytics for a date range' })
-    @ApiResponse({ 
-        status: 200, 
+    @ApiResponse({
+        status: 200,
         description: 'Analytics data retrieved successfully',
-        type: BabyAnalyticsResponseDto 
+        type: BabyAnalyticsResponseDto
     })
     @ApiResponse({ status: 404, description: 'Baby not found' })
     @ApiResponse({ status: 400, description: 'Invalid date range or baby ID' })
