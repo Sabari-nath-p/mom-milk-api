@@ -13,6 +13,10 @@ import { AuthModule } from './auth/auth.module';
 import { RequestModule } from './requests/requests.module';
 import { StartupModule } from './startup/startup.module';
 import { FirebaseModule } from './firebase/firebase.module';
+import { ContactFormModule } from './contact-form/contact-form.module';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
+import { join } from 'path';
 
 @Module({
     imports: [
@@ -30,6 +34,28 @@ import { FirebaseModule } from './firebase/firebase.module';
         RequestModule,
         StartupModule,
         FirebaseModule,
+        ContactFormModule,
+        MailerModule.forRoot({
+            transport: {
+                host: 'smtp.gmail.com',       // your SMTP host
+                port: 587,
+                secure: false,
+                auth: {
+                    user: process.env.MAIL_USER,
+                    pass: process.env.MAIL_PASS,
+                },
+            },
+            defaults: {
+                from: '"No Reply" <no-momsmilk@gmail.com>',
+            },
+            template: {
+                dir: join(process.cwd(), 'src/templates'), // ✅ absolute path
+                adapter: new PugAdapter(),
+                options: {
+                    strict: true,
+                },
+            }
+        }),
     ],
     controllers: [AppController],
     providers: [AppService],
