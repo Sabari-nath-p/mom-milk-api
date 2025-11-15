@@ -13,7 +13,7 @@ export class ContactFormService {
     ) { }
 
     async submitForm(dto: CreateContactFormDto) {
-        const { Name, phone_number, email, message } = dto;
+        const { Name, email, message } = dto;
 
         // Send email to admin
         await this.mailService.sendMail({
@@ -22,7 +22,6 @@ export class ContactFormService {
             template: 'welcome', // looks for src/templates/welcome.pug
             context: {
                 Name,
-                phone_number,
                 email,
                 message,
                 // job_title: job ? job.title : 'Unknown Position',

@@ -7,10 +7,6 @@ export class CreateContactFormDto {
 
     @IsString()
     @IsNotEmpty()
-    phone_number: string;
-
-    @IsString()
-    @IsNotEmpty()
     email: string;
 
     @IsString()
