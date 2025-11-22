@@ -126,6 +126,11 @@ export class GeolocationService {
      * Clears existing data before importing new data
      */
     async importZipCodesFromFile(filePath: string, clearExisting: boolean = true): Promise<{ imported: number; skipped: number; errors: number; deleted?: number }> {
+       
+        console.log('👉 importZipCodesFromFile called with:', filePath);
+        console.log('👉 File extension detected:', path.extname(filePath).toLowerCase());
+
+ 
         let imported = 0;
         let skipped = 0;
         let errors = 0;
