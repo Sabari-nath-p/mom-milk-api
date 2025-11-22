@@ -114,31 +114,36 @@ export class GeolocationController {
     }
 
     // @UseGuards(JwtAuthGuard, AdminGuard)
-    @ApiBearerAuth()
-    @Post('zipcodes/import')
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Import zipcodes from Excel (.xlsx) file (Admin only) - Clears existing data' })
-    @ApiResponse({ status: 200, description: 'Import completed' })
-    @ApiResponse({ status: 400, description: 'File not found or invalid format' })
-    async importZipCodes() {
-        // Look for Excel file first, then fallback to CSV
-        
-        const excelFilePath = 'src/data/zipcodes.xlsx';
-        const csvFilePath = 'src/data/zipcodes.csv';
+@ApiBearerAuth()
+@Post('zipcodes/import')
+@HttpCode(HttpStatus.OK)
+@ApiOperation({ summary: 'Import zipcodes from Excel (.xlsx) file (Admin only) - Clears existing data' })
+@ApiResponse({ status: 200, description: 'Import completed' })
+@ApiResponse({ status: 400, description: 'File not found or invalid format' })
+async importZipCodes() {
+  const fs = require('fs');
+  const path = require('path');
 
-        const fs = require('fs');
-        let filePath = '';
+  // Build absolute paths from project root
+  const excelFilePath = path.join(process.cwd(), 'src', 'data', 'zipcodes.xlsx');
+  const csvFilePath = path.join(process.cwd(), 'src', 'data', 'zipcodes.csv');
 
-        if (fs.existsSync(excelFilePath)) {
-            filePath = excelFilePath;
-        } else if (fs.existsSync(csvFilePath)) {
-            filePath = csvFilePath;
-        } else {
-            throw new Error('No zipcode file found. Please ensure zipcodes.xlsx or zipcodes.csv exists in src/data/ directory.');
-        }
+  let filePath = '';
 
-        return this.geolocationService.importZipCodesFromFile(excelFilePath, true); // true = clear existing data
-    }
+  if (fs.existsSync(excelFilePath)) {
+    filePath = excelFilePath; // prefer xlsx
+  } else if (fs.existsSync(csvFilePath)) {
+    filePath = csvFilePath;   // fallback to csv
+  } else {
+    throw new Error(
+      'No zipcode file found. Please ensure zipcodes.xlsx or zipcodes.csv exists in src/data/ directory.',
+    );
+  }
+
+  // ✅ use the resolved filePath
+  return this.geolocationService.importZipCodesFromFile(filePath, true); // true = clear existing data
+}
+
 
     @Get('distance/:zipcode1/:zipcode2')
     @ApiOperation({ summary: 'Calculate distance between two zipcodes' })
