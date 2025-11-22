@@ -146,69 +146,130 @@ export class GeolocationService {
         const zipCodes: CreateZipCodeDto[] = [];
 
         if (fileExtension === '.xlsx' || fileExtension === '.xls') {
-            // Handle Excel files
             console.log('Processing Excel file:', filePath);
 
             try {
                 const workbook = XLSX.readFile(filePath);
-                const sheetName = workbook.SheetNames[0]; // Use first sheet
+                const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
-                const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
-                // Skip header row and process data
-                for (let i = 1; i < data.length; i++) {
-                    const row = data[i];
+                // Try BOTH parsing methods to see which works
+                console.log('=== TRYING DIFFERENT PARSING METHODS ===');
 
-                    try {
-                        if (!row || row.length === 0) continue;
+                // Method 1: Array format (your current approach)
+                const dataArray = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+                console.log('Array format - rows:', dataArray.length);
+                if (dataArray.length > 0) {
+                    console.log('First row (array):', dataArray[0]);
+                }
 
-                        let country, zipcode, placeName, latitude, longitude;
+                // Method 2: Object format with headers (likely what works)
+                const dataObjects = XLSX.utils.sheet_to_json(worksheet);
+                console.log('Object format - rows:', dataObjects.length);
+                if (dataObjects.length > 0) {
+                    console.log('First row (object):', dataObjects[0]);
+                }
 
-                        if (row.length >= 11) {
-                            // Excel format: A=country(0), B=zipcode(1), C=placename(2), J=latitude(9), K=longitude(10)
-                            country = row[0]?.toString().trim();
-                            zipcode = row[1]?.toString().trim();
-                            placeName = row[2]?.toString().trim();
-                            latitude = parseFloat(row[9]); // Column J (0-indexed = 9)
-                            longitude = parseFloat(row[10]); // Column K (0-indexed = 10)
-                        } else if (row.length >= 5) {
-                            // Simple format: country,zipcode,placename,latitude,longitude
-                            country = row[0]?.toString().trim();
-                            zipcode = row[1]?.toString().trim();
-                            placeName = row[2]?.toString().trim();
-                            latitude = parseFloat(row[3]);
-                            longitude = parseFloat(row[4]);
-                        }
+                console.log('=== END PARSING METHODS ===');
 
-                        if (country && zipcode && placeName && !isNaN(latitude) && !isNaN(longitude)) {
-                            zipCodes.push({
-                                country,
-                                zipcode,
-                                placeName,
-                                latitude,
-                                longitude,
-                            });
-                        } else {
+                let imported = 0;
+                let skipped = 0;
+                let errors = 0;
+
+                // Use object format since you have proper headers
+                if (dataObjects.length > 0) {
+                    console.log('Using OBJECT format with headers');
+
+                    for (let i = 0; i < dataObjects.length; i++) {
+                        const row = dataObjects[i];
+
+                        try {
+                            // Use the actual header names from your file
+                            const country = row['country']?.toString().trim();
+                            const zipcode = row['zipcode']?.toString().trim();
+                            const placeName = row['placeName']?.toString().trim();
+                            const latitude = parseFloat(row['latitude']);
+                            const longitude = parseFloat(row['longitude']);
+
+                            console.log(`Processing row ${i + 1}:`, { country, zipcode, placeName, latitude, longitude });
+
+                            if (country && zipcode && placeName && !isNaN(latitude) && !isNaN(longitude)) {
+                                try {
+                                    await this.createZipCode({
+                                        country,
+                                        zipcode,
+                                        placeName,
+                                        latitude,
+                                        longitude,
+                                    });
+                                    imported++;
+                                    console.log(`✅ Imported: ${zipcode} - ${placeName}`);
+                                } catch (error) {
+                                    skipped++;
+                                    console.log(`⚠️ Skipped duplicate: ${zipcode}`);
+                                }
+                            } else {
+                                errors++;
+                                console.warn(`❌ Invalid row ${i + 1}:`, { country, zipcode, placeName, latitude, longitude });
+                            }
+                        } catch (error) {
                             errors++;
-                            console.warn(`Invalid Excel row data at row ${i + 1}: Country="${country}", Zipcode="${zipcode}", Place="${placeName}", Lat=${latitude}, Lng=${longitude}`);
+                            console.error(`❌ Error processing row ${i + 1}:`, error);
                         }
-                    } catch (error) {
-                        errors++;
-                        console.error(`Error parsing Excel row ${i + 1}:`, error);
                     }
                 }
+                // Fallback to array format if object format didn't work
+                else if (dataArray.length > 1) {
+                    console.log('Using ARRAY format (fallback)');
 
-                // Batch insert zipcodes
-                for (const zipCodeData of zipCodes) {
-                    try {
-                        await this.createZipCode(zipCodeData);
-                        imported++;
-                    } catch (error) {
-                        // Likely duplicate zipcode
-                        skipped++;
+                    // Skip header row (index 0)
+                    for (let i = 1; i < dataArray.length; i++) {
+                        const row = dataArray[i];
+
+                        try {
+                            if (!row || row.length < 11) {
+                                errors++;
+                                continue;
+                            }
+
+                            // Your original array positions
+                            const country = row[0]?.toString().trim();
+                            const zipcode = row[1]?.toString().trim();
+                            const placeName = row[2]?.toString().trim();
+                            const latitude = parseFloat(row[9]); // Column J
+                            const longitude = parseFloat(row[10]); // Column K
+
+                            console.log(`Processing row ${i + 1}:`, { country, zipcode, placeName, latitude, longitude });
+
+                            if (country && zipcode && placeName && !isNaN(latitude) && !isNaN(longitude)) {
+                                try {
+                                    await this.createZipCode({
+                                        country,
+                                        zipcode,
+                                        placeName,
+                                        latitude,
+                                        longitude,
+                                    });
+                                    imported++;
+                                    console.log(`✅ Imported: ${zipcode} - ${placeName}`);
+                                } catch (error) {
+                                    skipped++;
+                                    console.log(`⚠️ Skipped duplicate: ${zipcode}`);
+                                }
+                            } else {
+                                errors++;
+                                console.warn(`❌ Invalid row ${i + 1}`);
+                            }
+                        } catch (error) {
+                            errors++;
+                            console.error(`❌ Error processing row ${i + 1}:`, error);
+                        }
                     }
+                } else {
+                    throw new Error('No data found in Excel file');
                 }
 
+                console.log(`🎉 Import completed: ${imported} imported, ${skipped} skipped, ${errors} errors`);
                 return { imported, skipped, errors, deleted };
 
             } catch (error) {

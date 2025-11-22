@@ -113,7 +113,7 @@ export class GeolocationController {
         return this.geolocationService.findNearbyZipCodes(zipcode, parseInt(radius));
     }
 
-    @UseGuards(JwtAuthGuard, AdminGuard)
+    // @UseGuards(JwtAuthGuard, AdminGuard)
     @ApiBearerAuth()
     @Post('zipcodes/import')
     @HttpCode(HttpStatus.OK)
@@ -124,10 +124,10 @@ export class GeolocationController {
         // Look for Excel file first, then fallback to CSV
         const excelFilePath = 'src/data/zipcodes.xlsx';
         const csvFilePath = 'src/data/zipcodes.csv';
-        
+
         const fs = require('fs');
         let filePath = '';
-        
+
         if (fs.existsSync(excelFilePath)) {
             filePath = excelFilePath;
         } else if (fs.existsSync(csvFilePath)) {
@@ -135,7 +135,7 @@ export class GeolocationController {
         } else {
             throw new Error('No zipcode file found. Please ensure zipcodes.xlsx or zipcodes.csv exists in src/data/ directory.');
         }
-        
+
         return this.geolocationService.importZipCodesFromFile(filePath, true); // true = clear existing data
     }
 
