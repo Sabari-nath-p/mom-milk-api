@@ -1,0 +1,181 @@
+{
+  "info": {
+    "name": "Mom's Milk - Chat API",
+    "description": "REST and WebSocket APIs for real-time chat between parents and donors",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your-jwt-token-here",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Chat Sessions",
+      "item": [
+        {
+          "name": "Get Chat Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/chat/sessions?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["chat", "sessions"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page"
+                }
+              ]
+            },
+            "description": "Get all chat sessions for the authenticated user with pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Get or Create Session with User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/chat/session/:otherUserId",
+              "host": ["{{baseUrl}}"],
+              "path": ["chat", "session", ":otherUserId"],
+              "variable": [
+                {
+                  "key": "otherUserId",
+                  "value": "2",
+                  "description": "ID of the other user"
+                }
+              ]
+            },
+            "description": "Get existing chat session or create a new one with another user"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "Get Messages for a Session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/chat/sessions/:sessionId/messages?page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["chat", "sessions", ":sessionId", "messages"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Items per page"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "sessionId",
+                  "value": "1",
+                  "description": "ID of the chat session"
+                }
+              ]
+            },
+            "description": "Get paginated messages for a specific chat session"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Message (REST Fallback)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": 2,\n  \"content\": \"Hello, I need milk for my baby\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/chat/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["chat", "messages"]
+            },
+            "description": "Send a message via REST API (fallback when WebSocket is unavailable)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Messages as Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageIds\": [1, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/chat/messages/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["chat", "messages", "read"]
+            },
+            "description": "Mark multiple messages as read"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Unread Message Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/chat/unread-count",
+              "host": ["{{baseUrl}}"],
+              "path": ["chat", "unread-count"]
+            },
+            "description": "Get total unread message count for the authenticated user"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

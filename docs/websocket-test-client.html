@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mom's Milk - Chat WebSocket Tester</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        button.danger {
+            background: #ef4444;
+        }
+
+        button.danger:hover {
+            background: #dc2626;
+        }
+
+        button.success {
+            background: #10b981;
+        }
+
+        button.success:hover {
+            background: #059669;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .status.connected {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status.disconnected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status.connecting {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .log-container {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px;
+            border-radius: 3px;
+        }
+
+        .log-entry.info {
+            background: #1e3a8a;
+        }
+
+        .log-entry.success {
+            background: #065f46;
+        }
+
+        .log-entry.error {
+            background: #991b1b;
+        }
+
+        .log-entry.warning {
+            background: #92400e;
+        }
+
+        .log-time {
+            color: #9ca3af;
+            margin-right: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔌 Chat WebSocket Tester</h1>
+            <p>Test your Mom's Milk chat WebSocket connection in real-time</p>
+        </div>
+
+        <div class="grid">
+            <!-- Connection Panel -->
+            <div class="card">
+                <h2>🔐 Connection Settings</h2>
+                
+                <div class="input-group">
+                    <label>Server URL</label>
+                    <input type="text" id="serverUrl" value="http://localhost:3000" placeholder="http://localhost:3000">
+                </div>
+
+                <div class="input-group">
+                    <label>JWT Token</label>
+                    <input type="text" id="jwtToken" placeholder="your-jwt-token-here">
+                </div>
+
+                <div id="connectionStatus" class="status disconnected">
+                    ⚫ Disconnected
+                </div>
+
+                <div class="button-group">
+                    <button id="connectBtn" onclick="connect()">Connect</button>
+                    <button id="disconnectBtn" onclick="disconnect()" class="danger" disabled>Disconnect</button>
+                    <button onclick="clearLogs()">Clear Logs</button>
+                </div>
+            </div>
+
+            <!-- Send Message Panel -->
+            <div class="card">
+                <h2>💬 Send Message</h2>
+                
+                <div class="input-group">
+                    <label>Recipient ID</label>
+                    <input type="number" id="recipientId" placeholder="2" value="2">
+                </div>
+
+                <div class="input-group">
+                    <label>Message Content</label>
+                    <textarea id="messageContent" placeholder="Hello! I need milk for my baby"></textarea>
+                </div>
+
+                <button onclick="sendMessage()" id="sendMessageBtn" disabled>Send Message</button>
+            </div>
+
+            <!-- Session Actions -->
+            <div class="card">
+                <h2>🔄 Session Actions</h2>
+                
+                <div class="input-group">
+                    <label>Session ID</label>
+                    <input type="number" id="sessionId" placeholder="1" value="1">
+                </div>
+
+                <div class="button-group">
+                    <button onclick="joinSession()" id="joinBtn" disabled>Join Session</button>
+                    <button onclick="leaveSession()" id="leaveBtn" disabled>Leave Session</button>
+                </div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;">
+
+                <h2 style="margin-top: 0;">⌨️ Typing Indicator</h2>
+                
+                <div class="input-group">
+                    <label>Recipient ID for Typing</label>
+                    <input type="number" id="typingRecipientId" placeholder="2" value="2">
+                </div>
+
+                <div class="button-group">
+                    <button onclick="startTyping()" id="startTypingBtn" class="success" disabled>Start Typing</button>
+                    <button onclick="stopTyping()" id="stopTypingBtn" class="danger" disabled>Stop Typing</button>
+                </div>
+            </div>
+
+            <!-- Mark Actions -->
+            <div class="card">
+                <h2>✅ Mark Actions</h2>
+                
+                <div class="input-group">
+                    <label>Message IDs (comma-separated)</label>
+                    <input type="text" id="messageIds" placeholder="1,2,3" value="1,2,3">
+                </div>
+
+                <div class="button-group">
+                    <button onclick="markAsRead()" id="markReadBtn" disabled>Mark as Read</button>
+                    <button onclick="markAsDelivered()" id="markDeliveredBtn" disabled>Mark as Delivered</button>
+                </div>
+            </div>
+
+            <!-- Event Log -->
+            <div class="card full-width">
+                <h2>📜 Event Log</h2>
+                <div id="eventLog" class="log-container">
+                    <div class="log-entry info">
+                        <span class="log-time">[Ready]</span>
+                        <span>WebSocket tester initialized. Enter your JWT token and click Connect.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let isConnected = false;
+
+        // Log functions
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('eventLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="log-time">[${time}]</span><span>${message}</span>`;
+            
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLogs() {
+            const logContainer = document.getElementById('eventLog');
+            logContainer.innerHTML = '<div class="log-entry info"><span class="log-time">[Cleared]</span><span>Logs cleared</span></div>';
+        }
+
+        function updateConnectionStatus(status) {
+            const statusEl = document.getElementById('connectionStatus');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            
+            // Update all buttons
+            const buttons = [
+                'sendMessageBtn', 'joinBtn', 'leaveBtn', 
+                'startTypingBtn', 'stopTypingBtn', 'markReadBtn', 'markDeliveredBtn'
+            ];
+
+            if (status === 'connected') {
+                statusEl.className = 'status connected';
+                statusEl.innerHTML = '🟢 Connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                buttons.forEach(id => document.getElementById(id).disabled = false);
+                isConnected = true;
+            } else if (status === 'connecting') {
+                statusEl.className = 'status connecting';
+                statusEl.innerHTML = '🟡 Connecting...';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = true;
+                buttons.forEach(id => document.getElementById(id).disabled = true);
+                isConnected = false;
+            } else {
+                statusEl.className = 'status disconnected';
+                statusEl.innerHTML = '⚫ Disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                buttons.forEach(id => document.getElementById(id).disabled = true);
+                isConnected = false;
+            }
+        }
+
+        // Connection functions
+        function connect() {
+            const serverUrl = document.getElementById('serverUrl').value;
+            const token = document.getElementById('jwtToken').value;
+
+            if (!token) {
+                alert('Please enter a JWT token');
+                return;
+            }
+
+            updateConnectionStatus('connecting');
+            log('Attempting to connect...', 'info');
+
+            try {
+                socket = io(`${serverUrl}/chat`, {
+                    auth: { token }
+                });
+
+                // Connection events
+                socket.on('connect', () => {
+                    updateConnectionStatus('connected');
+                    log('✅ Connected successfully!', 'success');
+                });
+
+                socket.on('disconnect', (reason) => {
+                    updateConnectionStatus('disconnected');
+                    log(`❌ Disconnected: ${reason}`, 'error');
+                });
+
+                socket.on('connect_error', (error) => {
+                    updateConnectionStatus('disconnected');
+                    log(`❌ Connection error: ${error.message}`, 'error');
+                });
+
+                // Message events
+                socket.on('messageSent', (data) => {
+                    log(`📤 Message Sent: ${JSON.stringify(data, null, 2)}`, 'success');
+                });
+
+                socket.on('newMessage', (data) => {
+                    log(`📨 New Message Received: ${JSON.stringify(data, null, 2)}`, 'info');
+                });
+
+                // Typing events
+                socket.on('userTyping', (data) => {
+                    const status = data.isTyping ? 'typing...' : 'stopped typing';
+                    log(`⌨️ User ${data.userId} is ${status}`, 'info');
+                });
+
+                // Read/Delivered events
+                socket.on('messagesRead', (data) => {
+                    log(`✓✓ Messages Read: ${JSON.stringify(data)}`, 'success');
+                });
+
+                socket.on('messagesDelivered', (data) => {
+                    log(`✓ Messages Delivered: ${JSON.stringify(data)}`, 'success');
+                });
+
+                // Error event
+                socket.on('error', (error) => {
+                    log(`⚠️ Error: ${error}`, 'error');
+                });
+
+            } catch (error) {
+                updateConnectionStatus('disconnected');
+                log(`❌ Failed to connect: ${error.message}`, 'error');
+            }
+        }
+
+        function disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                log('Disconnected manually', 'warning');
+            }
+        }
+
+        // Message functions
+        function sendMessage() {
+            if (!isConnected) {
+                alert('Not connected!');
+                return;
+            }
+
+            const recipientId = parseInt(document.getElementById('recipientId').value);
+            const content = document.getElementById('messageContent').value;
+
+            if (!content) {
+                alert('Please enter a message');
+                return;
+            }
+
+            const payload = { recipientId, content };
+            log(`📤 Sending: ${JSON.stringify(payload)}`, 'info');
+            
+            socket.emit('sendMessage', payload);
+            document.getElementById('messageContent').value = '';
+        }
+
+        // Session functions
+        function joinSession() {
+            if (!isConnected) return;
+
+            const sessionId = parseInt(document.getElementById('sessionId').value);
+            const payload = { sessionId };
+            
+            log(`🔗 Joining session: ${sessionId}`, 'info');
+            socket.emit('joinSession', payload);
+        }
+
+        function leaveSession() {
+            if (!isConnected) return;
+
+            const sessionId = parseInt(document.getElementById('sessionId').value);
+            const payload = { sessionId };
+            
+            log(`🔓 Leaving session: ${sessionId}`, 'info');
+            socket.emit('leaveSession', payload);
+        }
+
+        // Typing functions
+        function startTyping() {
+            if (!isConnected) return;
+
+            const recipientId = parseInt(document.getElementById('typingRecipientId').value);
+            const payload = { recipientId, isTyping: true };
+            
+            log(`⌨️ Started typing to user ${recipientId}`, 'info');
+            socket.emit('typing', payload);
+        }
+
+        function stopTyping() {
+            if (!isConnected) return;
+
+            const recipientId = parseInt(document.getElementById('typingRecipientId').value);
+            const payload = { recipientId, isTyping: false };
+            
+            log(`⌨️ Stopped typing to user ${recipientId}`, 'info');
+            socket.emit('typing', payload);
+        }
+
+        // Mark functions
+        function markAsRead() {
+            if (!isConnected) return;
+
+            const messageIds = document.getElementById('messageIds').value
+                .split(',')
+                .map(id => parseInt(id.trim()))
+                .filter(id => !isNaN(id));
+
+            if (messageIds.length === 0) {
+                alert('Please enter valid message IDs');
+                return;
+            }
+
+            const payload = { messageIds };
+            log(`✓✓ Marking as read: ${messageIds.join(', ')}`, 'info');
+            socket.emit('markAsRead', payload);
+        }
+
+        function markAsDelivered() {
+            if (!isConnected) return;
+
+            const messageIds = document.getElementById('messageIds').value
+                .split(',')
+                .map(id => parseInt(id.trim()))
+                .filter(id => !isNaN(id));
+
+            if (messageIds.length === 0) {
+                alert('Please enter valid message IDs');
+                return;
+            }
+
+            const payload = { messageIds };
+            log(`✓ Marking as delivered: ${messageIds.join(', ')}`, 'info');
+            socket.emit('markAsDelivered', payload);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter to send message
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                if (isConnected && document.getElementById('messageContent').value) {
+                    sendMessage();
+                }
+            }
+        });
+
+        // Initialize
+        log('💡 Tip: Press Ctrl+Enter to send message', 'info');
+        log('💡 Tip: All events will be logged here in real-time', 'info');
+    </script>
+</body>
+</html>

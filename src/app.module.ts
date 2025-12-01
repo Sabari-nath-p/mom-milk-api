@@ -14,6 +14,7 @@ import { RequestModule } from './requests/requests.module';
 import { StartupModule } from './startup/startup.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { ContactFormModule } from './contact-form/contact-form.module';
+import { ChatModule } from './chat/chat.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
 import { join } from 'path';
@@ -35,6 +36,7 @@ import { join } from 'path';
         StartupModule,
         FirebaseModule,
         ContactFormModule,
+        ChatModule,
         MailerModule.forRoot({
             transport: {
                 host: 'smtp.gmail.com',       // your SMTP host

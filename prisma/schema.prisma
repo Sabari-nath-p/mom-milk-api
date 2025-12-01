@@ -82,6 +82,7 @@ model User {
   healthStyle              String? // JSON string array - optional
   ableToShareMedicalRecord Boolean?  @default(false)
   isAvailable              Boolean?  @default(true) // For donors - availability status
+  lastAvailabilityNotificationAt DateTime? // Track last time availability notification was sent
 
   // Social media links (optional for all users)
   facebookLink  String?
@@ -286,4 +287,58 @@ model RequestNotification {
 
   @@index([userId, isRead])
   @@map("request_notifications")
+}
+
+model ChatSession {
+  id Int @id @default(autoincrement())
+
+  // Participants (parent and donor)
+  parentId Int
+  donorId  Int
+
+  // Session metadata
+  lastMessageAt DateTime  @default(now())
+  isActive      Boolean   @default(true)
+
+  // Relations
+  messages ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([parentId, donorId])
+  @@index([parentId])
+  @@index([donorId])
+  @@index([lastMessageAt])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id Int @id @default(autoincrement())
+
+  // Message details
+  content String @db.Text
+  
+  // Sender details
+  senderId Int
+  
+  // Session details
+  sessionId Int
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Message status
+  isRead   Boolean  @default(false)
+  readAt   DateTime?
+  
+  // Delivery status
+  isDelivered   Boolean  @default(false)
+  deliveredAt   DateTime?
+  sentAt        DateTime? // When message was sent
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sessionId, createdAt])
+  @@index([senderId])
+  @@map("chat_messages")
 }

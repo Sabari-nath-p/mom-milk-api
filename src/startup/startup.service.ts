@@ -13,7 +13,7 @@ export class StartupService implements OnModuleInit {
         this.logger.log('Starting application initialization...');
 
         try {
-            await this.importZipCodesOnStartup();
+           // await this.importZipCodesOnStartup();
             this.logger.log('Application initialization completed successfully');
         } catch (error) {
             this.logger.error('Error during application initialization:', error);

@@ -1,13 +1,20 @@
-import { Module } from '@nestjs/common';
-import { BabiesService } from './babies.service';
-import { BabiesAnalyticsService } from './babies-analytics.service';
-import { BabiesController } from './babies.controller';
-import { PrismaModule } from '../prisma/prisma.module';
+import { Module } from "@nestjs/common";
+import { BabiesService } from "./babies.service";
+import { BabiesAnalyticsService } from "./babies-analytics.service";
+import { BabiesController } from "./babies.controller";
+import { PrismaModule } from "../prisma/prisma.module";
+import { JwtModule } from "@nestjs/jwt";
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [BabiesController],
-    providers: [BabiesService, BabiesAnalyticsService],
-    exports: [BabiesService, BabiesAnalyticsService],
+  imports: [
+    PrismaModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || "your-secret-key",
+      signOptions: { expiresIn: "24h" },
+    }),
+  ],
+  controllers: [BabiesController],
+  providers: [BabiesService, BabiesAnalyticsService],
+  exports: [BabiesService, BabiesAnalyticsService],
 })
-export class BabiesModule { }
+export class BabiesModule {}

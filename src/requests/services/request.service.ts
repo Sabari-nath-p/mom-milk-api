@@ -658,7 +658,7 @@ export class RequestService {
     async updateAvailability(donorId: number, updateDto: UpdateAvailabilityDto): Promise<{ success: boolean; message: string }> {
         const donor = await this.prisma.user.findUnique({
             where: { id: donorId },
-            select: { id: true, userType: true, name: true, isAvailable: true },
+            select: { id: true, userType: true, name: true, isAvailable: true, lastAvailabilityNotificationAt: true },
         });
 
         if (!donor) {
@@ -678,8 +678,18 @@ export class RequestService {
         });
 
         // If donor is becoming available, notify users who requested from them
+        // Only send email notifications if 24 hours have passed since the last notification
         if (wasUnavailable && isBecomingAvailable) {
-            await this.notifyUsersOfAvailability(donorId, donor.name);
+            const shouldSendEmail = this.shouldSendAvailabilityEmail(donor.lastAvailabilityNotificationAt);
+            await this.notifyUsersOfAvailability(donorId, donor.name, shouldSendEmail);
+            
+            // Update the last notification timestamp if email was sent
+            if (shouldSendEmail) {
+                await this.prisma.user.update({
+                    where: { id: donorId },
+                    data: { lastAvailabilityNotificationAt: new Date() },
+                });
+            }
         }
 
         return {
@@ -1048,7 +1058,23 @@ export class RequestService {
         return notification;
     }
 
-    private async notifyUsersOfAvailability(donorId: number, donorName: string) {
+    /**
+     * Check if 24 hours have passed since the last availability notification
+     */
+    private shouldSendAvailabilityEmail(lastNotificationAt: Date | null): boolean {
+        if (!lastNotificationAt) {
+            // Never sent a notification before, allow it
+            return true;
+        }
+
+        const now = new Date();
+        const hoursSinceLastNotification = (now.getTime() - lastNotificationAt.getTime()) / (1000 * 60 * 60);
+        
+        // Only allow email if 24 hours have passed
+        return hoursSinceLastNotification >= 24;
+    }
+
+    private async notifyUsersOfAvailability(donorId: number, donorName: string, sendEmail: boolean = true) {
         // Get donor's contact information
         const donor = await this.prisma.user.findUnique({
             where: { id: donorId },
@@ -1077,9 +1103,9 @@ export class RequestService {
             },
         });
 
-        // Create notifications and send emails for these users
+        // Create notifications and conditionally send emails for these users
         for (const request of acceptedRequests) {
-            // Create in-app notification
+            // Always create in-app notification
             await this.prisma.requestNotification.create({
                 data: {
                     userId: request.requester.id,
@@ -1090,22 +1116,24 @@ export class RequestService {
                 },
             });
 
-            // Send email notification with donor contact info
-            try {
-                await this.mailService.sendAvailabilityNotificationEmail(
-                    request.requester.email,
-                    request.requester.name,
-                    donorName,
-                    request.title,
-                    donor?.email,
-                    donor?.facebookLink,
-                    donor?.instagramLink
-                );
-            } catch (error) {
-                console.error(`Failed to send availability email to ${request.requester.email}:`, error);
+            // Only send email notification if 24-hour cooldown has passed
+            if (sendEmail) {
+                try {
+                    await this.mailService.sendAvailabilityNotificationEmail(
+                        request.requester.email,
+                        request.requester.name,
+                        donorName,
+                        request.title,
+                        donor?.email,
+                        donor?.facebookLink,
+                        donor?.instagramLink
+                    );
+                } catch (error) {
+                    console.error(`Failed to send availability email to ${request.requester.email}:`, error);
+                }
             }
 
-            // Send FCM push notification if user has token
+            // Always send FCM push notification if user has token
             if (request.requester.fcmToken) {
                 try {
                     await this.firebaseService.sendNotification({
