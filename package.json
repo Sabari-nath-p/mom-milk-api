@@ -40,6 +40,7 @@
         "health:check": "curl -f http://localhost:3001/health || echo 'API not responding'",
         "setup": "./scripts/setup.sh",
         "generate:sample-zipcodes": "ts-node src/scripts/generate-sample-zipcodes.ts",
+        "import:zipcodes": "ts-node src/scripts/import-zipcodes.ts",
         "import:test": "npm run generate:sample-zipcodes && curl -X POST http://localhost:3003/geolocation/zipcodes/import"
     },
     "dependencies": {

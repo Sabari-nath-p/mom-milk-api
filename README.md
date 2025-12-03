@@ -250,16 +250,51 @@ ENABLE_RATE_LIMITING=true # Request throttling
 
 ## 📊 Data Import
 
-### **Zipcode Data**
-The system supports worldwide zipcode import:
+### **Zipcode Data Import**
 
-```csv
-country,zipcode,placename,latitude,longitude
-USA,10001,New York,40.7505,-73.9934
-UK,SW1A 1AA,London,51.5014,-0.1419
+The system supports worldwide zipcode import from Excel (.xlsx) or CSV files:
+
+#### **Command-Line Import (Recommended)**
+```bash
+# Import from default location (src/data/zipcodes.xlsx or zipcodes.csv)
+npm run import:zipcodes
+
+# Import specific file
+npm run import:zipcodes -- --file=path/to/file.xlsx
+
+# Add zipcodes without clearing existing data
+npm run import:zipcodes -- --file=new_zipcodes.csv --no-clear
+
+# Check database statistics
+npm run import:zipcodes -- --stats
+
+# Show help
+npm run import:zipcodes -- --help
 ```
 
-**Auto-import on startup** or manual import via API.
+#### **Supported Formats**
+
+**Excel with Headers (.xlsx)**:
+```
+country | zipcode | placeName    | latitude | longitude
+US      | 10001   | New York     | 40.7505  | -73.9934
+UK      | SW1A    | London       | 51.5014  | -0.1419
+```
+
+**CSV (.csv)**:
+```csv
+country,zipcode,placeName,latitude,longitude
+US,10001,New York,40.7505,-73.9934
+UK,SW1A,London,51.5014,-0.1419
+```
+
+#### **Import Methods**
+1. **Command-Line Script** (New!) - `npm run import:zipcodes`
+2. **API Endpoint** - `POST /geolocation/zipcodes/import` (Admin only)
+3. **Auto-import** - On server startup if database is empty
+
+📚 **Full Documentation**: See `docs/ZIPCODE_IMPORT_GUIDE.md` for complete guide
+📋 **Quick Reference**: See `docs/ZIPCODE_IMPORT_QUICKREF.md` for quick commands
 
 ## 🧪 Testing
 
@@ -343,6 +378,10 @@ npm run prisma:migrate     # Run migrations
 npm run prisma:generate    # Generate client
 npm run prisma:studio      # Database GUI
 npm run prisma:seed        # Import sample data
+
+# Data Import
+npm run import:zipcodes    # Import zipcode data from Excel/CSV
+npm run generate:sample-zipcodes  # Generate sample zipcode file
 
 # Development
 npm run start:dev          # Hot reload development
