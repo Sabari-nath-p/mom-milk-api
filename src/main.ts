@@ -10,9 +10,6 @@ async function bootstrap() {
     rawBody: true,
   });
 
-  // Stripe webhook MUST use raw body, before any other middleware
-  app.use("/donations/webhook", bodyParser.raw({ type: "application/json" }));
-
   // Enable validation globally — but Stripe webhook must bypass it
   app.useGlobalPipes(
     new ValidationPipe({

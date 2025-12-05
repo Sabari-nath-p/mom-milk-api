@@ -33,11 +33,11 @@ export class DonationsController {
   }
 
   @Post("webhook")
-  async stripeWebhook(@Req() req, @Res() res) {
+  async webhook(@Req() req, @Res() res) {
     const signature = req.headers["stripe-signature"];
 
     const result = await this.donationsService.handleStripeWebhook(
-      req.rawBody, // VERY IMPORTANT (Nest provides this now)
+      req.rawBody,
       signature
     );
 
