@@ -120,43 +120,87 @@ export class DonationsService {
   }
 
   async handleStripeWebhook(rawBody: Buffer, signature: string) {
+    console.log("\n📩 [Webhook Handler] Starting webhook processing...");
+
     let event: Stripe.Event;
 
+    // 1. Construct event from raw body + signature
     try {
       event = this.stripe.webhooks.constructEvent(
         rawBody,
         signature,
         process.env.STRIPE_WEBHOOK_SECRET
       );
+
+      console.log(`🔍 Event Verified: ${event.id}`);
+      console.log(`📌 Event Type: ${event.type}`);
     } catch (err) {
-      return { status: 400, message: `Webhook Error: ${err.message}` };
+      console.error("❌ Stripe Signature Verification FAILED");
+      console.error("Reason:", err.message);
+
+      return { status: 400, message: `Invalid signature: ${err.message}` };
     }
 
-    switch (event.type) {
-      case "checkout.session.completed":
-        await this.handleCheckoutCompleted(event.data.object as any);
-        break;
+    // 2. Log event payload (debug-safe)
+    console.log("📦 Event Payload Snapshot:", {
+      id: event.id,
+      type: event.type,
+      created: event.created,
+    });
 
-      case "payment_intent.succeeded":
-        await this.handlePaymentIntentSucceeded(event.data.object as any);
-        break;
+    // 3. Process based on event type
+    try {
+      switch (event.type) {
+        case "checkout.session.completed":
+          console.log("💳 Checkout Session Completed");
+          await this.handleCheckoutCompleted(event.data.object as any);
+          break;
 
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
+        case "payment_intent.succeeded":
+          console.log("💰 Payment Intent Succeeded");
+          await this.handlePaymentIntentSucceeded(event.data.object as any);
+          break;
+
+        default:
+          console.warn(`⚠️ Unhandled Event Type: ${event.type}`);
+      }
+    } catch (processingError) {
+      console.error("🔥 Error while processing event:", processingError);
+      return { status: 500, message: "Event processing error" };
     }
 
-    return { status: 200, message: "Webhook Received" };
+    return { status: 200, message: "Webhook processed successfully" };
   }
 
   private async handleCheckoutCompleted(session: any) {
+    console.log("\n🧩 [Checkout Completed Handler]");
+
+    if (!session.metadata?.donationId) {
+      console.error("❌ Missing donationId in metadata");
+      return;
+    }
+
     const donationId = parseInt(session.metadata.donationId);
+    console.log(`➡️ Donation ID: ${donationId}`);
+
+    // Validate donation exists
+    const donation = await this.prisma.donation.findUnique({
+      where: { id: donationId },
+    });
+
+    if (!donation) {
+      console.error(`❌ Donation not found for ID: ${donationId}`);
+      return;
+    }
+
+    console.log("🔄 Updating donation status → SUCCESS");
 
     await this.prisma.donation.update({
       where: { id: donationId },
       data: { status: "SUCCESS" },
     });
 
-    console.log(`Donation ${donationId} marked as SUCCESS`);
+    console.log(`🎉 Donation ${donationId} marked SUCCESS`);
   }
 
   private async handlePaymentIntentSucceeded(paymentIntent: any) {

@@ -33,15 +33,27 @@ export class DonationsController {
   }
 
   @Post("webhook")
-  async webhook(@Req() req, @Res() res) {
+  async handleWebhook(@Req() req, @Res() res) {
+    console.log("\n🔔 [WEBHOOK RECEIVED] Stripe sent a webhook event");
+
     const signature = req.headers["stripe-signature"];
+    if (!signature) {
+      console.error("❌ Missing stripe-signature header");
+      return res.status(400).send("Missing stripe-signature header");
+    }
 
-    const result = await this.donationsService.handleStripeWebhook(
-      req.rawBody,
-      signature
-    );
+    try {
+      const result = await this.donationsService.handleStripeWebhook(
+        req.rawBody,
+        signature
+      );
 
-    return res.status(result.status).send(result.message);
+      console.log("✅ Webhook handled successfully:", result.message);
+      return res.status(result.status).send(result.message);
+    } catch (error) {
+      console.error("🔥 Webhook Handler Error:", error);
+      return res.status(500).send("Webhook internal error");
+    }
   }
 
   @Get()
