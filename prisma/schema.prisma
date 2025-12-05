@@ -61,6 +61,14 @@ enum RequestType {
   MILK_OFFER
 }
 
+enum DonationStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
 model User {
   id       Int      @id @default(autoincrement())
   name     String
@@ -76,12 +84,12 @@ model User {
   lastLoginAt DateTime?
 
   // Donor specific fields (optional for other user types)
-  description              String?
-  bloodGroup               String?
-  babyDeliveryDate         DateTime?
-  healthStyle              String? // JSON string array - optional
-  ableToShareMedicalRecord Boolean?  @default(false)
-  isAvailable              Boolean?  @default(true) // For donors - availability status
+  description                    String?
+  bloodGroup                     String?
+  babyDeliveryDate               DateTime?
+  healthStyle                    String? // JSON string array - optional
+  ableToShareMedicalRecord       Boolean?  @default(false)
+  isAvailable                    Boolean?  @default(true) // For donors - availability status
   lastAvailabilityNotificationAt DateTime? // Track last time availability notification was sent
 
   // Social media links (optional for all users)
@@ -97,8 +105,9 @@ model User {
   receivedRequests MilkRequest[]         @relation("DonorUser")
   notifications    RequestNotification[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  Donation  Donation[]
 
   @@map("users")
 }
@@ -297,8 +306,8 @@ model ChatSession {
   donorId  Int
 
   // Session metadata
-  lastMessageAt DateTime  @default(now())
-  isActive      Boolean   @default(true)
+  lastMessageAt DateTime @default(now())
+  isActive      Boolean  @default(true)
 
   // Relations
   messages ChatMessage[]
@@ -318,22 +327,22 @@ model ChatMessage {
 
   // Message details
   content String @db.Text
-  
+
   // Sender details
   senderId Int
-  
+
   // Session details
   sessionId Int
   session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   // Message status
-  isRead   Boolean  @default(false)
-  readAt   DateTime?
-  
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
   // Delivery status
-  isDelivered   Boolean  @default(false)
-  deliveredAt   DateTime?
-  sentAt        DateTime? // When message was sent
+  isDelivered Boolean   @default(false)
+  deliveredAt DateTime?
+  sentAt      DateTime? // When message was sent
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -341,4 +350,19 @@ model ChatMessage {
   @@index([sessionId, createdAt])
   @@index([senderId])
   @@map("chat_messages")
+}
+
+model Donation {
+  id                    Int            @id @default(autoincrement())
+  amount                Float
+  currency              String
+  stripePaymentIntentId String
+  status                DonationStatus // <-- enum
+  donorEmail            String?
+  donorName             String?
+  createdAt             DateTime       @default(now())
+  user                  User?          @relation(fields: [userId], references: [id])
+  userId                Int?
+
+  @@map("donations")
 }

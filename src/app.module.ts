@@ -18,6 +18,7 @@ import { ChatModule } from './chat/chat.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { PugAdapter } from '@nestjs-modules/mailer/dist/adapters/pug.adapter';
 import { join } from 'path';
+import { DonationsModule } from './donations/donations.module';
 
 @Module({
     imports: [
@@ -58,6 +59,7 @@ import { join } from 'path';
                 },
             }
         }),
+        DonationsModule,
     ],
     controllers: [AppController],
     providers: [AppService],
