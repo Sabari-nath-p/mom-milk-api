@@ -204,13 +204,31 @@ export class DonationsService {
   }
 
   private async handlePaymentIntentSucceeded(paymentIntent: any) {
+    console.log("\n🧩 [Payment Intent Succeeded Handler]");
+
+    if (!paymentIntent.metadata?.donationId) {
+      console.error("❌ Missing donationId in payment intent metadata");
+      return;
+    }
+
     const donationId = parseInt(paymentIntent.metadata.donationId);
+    console.log(`➡️ Donation ID: ${donationId}`);
+
+    const donation = await this.prisma.donation.findUnique({
+      where: { id: donationId },
+    });
+    if (!donation) {
+      console.error(`❌ Donation not found for ID: ${donationId}`);
+      return;
+    }
+
+    console.log("🔄 Updating donation status → SUCCESS");
 
     await this.prisma.donation.update({
       where: { id: donationId },
       data: { status: "SUCCESS" },
     });
 
-    console.log(`Donation ${donationId} completed via PaymentIntent`);
+    console.log(`🎉 Donation ${donationId} marked SUCCESS`);
   }
 }
