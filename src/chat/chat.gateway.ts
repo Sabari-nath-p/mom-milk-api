@@ -329,4 +329,24 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.error(`Error loading unread messages for user ${userId}:`, error);
     }
   }
+
+  formatSession(session, otherUser, unreadCount, lastMessage) {
+    return {
+      id: session.id,
+      parentId: session.parentId,
+      donorId: session.donorId,
+      lastMessageAt: session.lastMessageAt,
+      isActive: session.isActive,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+      otherUser: {
+        id: otherUser.id,
+        name: otherUser.name,
+        email: otherUser.email,
+        userType: otherUser.userType,
+      },
+      unreadCount,
+      lastMessage,
+    };
+  }
 }
