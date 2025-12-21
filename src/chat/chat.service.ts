@@ -79,7 +79,8 @@ export class ChatService {
     const lastMessage = session.messages?.[0] || null;
 
     // Determine the OTHER user relative to the requester (userId1)
-    const otherUserId = userId1 === parentId ? donorId : parentId;
+    // The other user is the one who is NOT userId1
+    const otherUserId = userId1 === session.parentId ? session.donorId : session.parentId;
 
     const otherUser = await this.prisma.user.findUnique({
       where: { id: otherUserId },
