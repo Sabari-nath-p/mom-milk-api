@@ -14,8 +14,41 @@ export class ChatService {
    * Get or create a chat session between two users
    */
   async getOrCreateSession(userId1: number, userId2: number) {
-    // Ensure consistent ordering
-    const [parentId, donorId] = [userId1, userId2].sort((a, b) => a - b);
+    // Get user types to determine correct parent and donor assignment
+    const [user1, user2] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId1 },
+        select: { id: true, userType: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: userId2 },
+        select: { id: true, userType: true },
+      }),
+    ]);
+
+    if (!user1 || !user2) {
+      throw new NotFoundException('One or both users not found');
+    }
+
+    // Assign parentId (BUYER/ADMIN) and donorId (DONOR) based on userType
+    let parentId: number;
+    let donorId: number;
+
+    if (user1.userType === 'DONOR' && user2.userType === 'DONOR') {
+      // Both are donors - use numeric ordering as fallback
+      [parentId, donorId] = [userId1, userId2].sort((a, b) => a - b);
+    } else if (user1.userType === 'DONOR') {
+      // user1 is donor, user2 is parent
+      donorId = userId1;
+      parentId = userId2;
+    } else if (user2.userType === 'DONOR') {
+      // user2 is donor, user1 is parent
+      donorId = userId2;
+      parentId = userId1;
+    } else {
+      // Both are non-donors (BUYER/ADMIN) - use numeric ordering as fallback
+      [parentId, donorId] = [userId1, userId2].sort((a, b) => a - b);
+    }
 
     // Fetch session with last message
     let session = await this.prisma.chatSession.findUnique({
