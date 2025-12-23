@@ -406,12 +406,13 @@
                 });
 
                 // Message events
-                socket.on('messageSent', (data) => {
-                    log(`📤 Message Sent: ${JSON.stringify(data, null, 2)}`, 'success');
+                socket.on('newMessageSent', (data) => {
+                    log(`📤 Message Sent Successfully:\n${JSON.stringify(data, null, 2)}`, 'success');
+                    log(`   Recipient Online: ${data.recipientOnline ? '🟢 Yes' : '⚫ No'}`, 'success');
                 });
 
                 socket.on('newMessage', (data) => {
-                    log(`📨 New Message Received: ${JSON.stringify(data, null, 2)}`, 'info');
+                    log(`📨 New Message Received:\n${JSON.stringify(data, null, 2)}`, 'info');
                 });
 
                 // Typing events

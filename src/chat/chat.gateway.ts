@@ -113,10 +113,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Check if recipient is online
       const isRecipientOnline = this.isUserOnline(data.recipientId);
 
-      // Emit to sender (confirmation)
-      client.emit("messageSent", {
+      // Emit to sender (confirmation with newMessageSent event)
+      this.server.to(`user:${senderId}`).emit("newMessageSent", {
         ...message,
         sessionId: session.id,
+        session: session,
         recipientOnline: isRecipientOnline,
       });
 
@@ -131,15 +132,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           `Message sent in real-time to online user ${data.recipientId}`
         );
       } else {
-        // Recipient is offline - message is already saved in DB
+        // Recipient is offline - send push notification
         console.log(`Message saved for offline user ${data.recipientId}`);
+        await this.chatService.sendChatPushNotification(
+          data.recipientId,
+          senderId,
+          data.content,
+          session.id,
+          message.id,
+        );
       }
-
-      this.server.to(`user:${senderId}`).emit("newMessage", {
-        ...message,
-        sessionId: session.id,
-        session: session,
-      });
 
       return { success: true, message, recipientOnline: isRecipientOnline };
     } catch (error) {

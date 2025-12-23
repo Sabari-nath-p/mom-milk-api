@@ -2,13 +2,20 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { FirebaseService } from "../firebase/firebase.service";
 import { SendMessageDto } from "./dto/send-message.dto";
 
 @Injectable()
 export class ChatService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(ChatService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private firebaseService: FirebaseService,
+  ) {}
 
   /**
    * Get or create a chat session between two users
@@ -362,5 +369,74 @@ export class ChatService {
     });
 
     return { unreadCount };
+  }
+
+  /**
+   * Send push notification for a chat message
+   */
+  async sendChatPushNotification(
+    recipientId: number,
+    senderId: number,
+    messageContent: string,
+    sessionId: number,
+    messageId: number,
+  ): Promise<void> {
+    try {
+      // Get recipient's FCM token and sender's name
+      const [recipient, sender] = await Promise.all([
+        this.prisma.user.findUnique({
+          where: { id: recipientId },
+          select: { fcmToken: true, name: true },
+        }),
+        this.prisma.user.findUnique({
+          where: { id: senderId },
+          select: { name: true },
+        }),
+      ]);
+
+      if (!recipient?.fcmToken) {
+        this.logger.warn(
+          `No FCM token found for user ${recipientId}. Push notification not sent.`,
+        );
+        return;
+      }
+
+      if (!sender) {
+        this.logger.warn(`Sender ${senderId} not found`);
+        return;
+      }
+
+      // Truncate message content if too long
+      const truncatedContent =
+        messageContent.length > 100
+          ? messageContent.substring(0, 97) + "..."
+          : messageContent;
+
+      // Send push notification
+      await this.firebaseService.sendNotification({
+        token: recipient.fcmToken,
+        notification: {
+          title: sender.name,
+          body: truncatedContent,
+        },
+        data: {
+          type: "CHAT_MESSAGE",
+          sessionId: sessionId.toString(),
+          senderId: senderId.toString(),
+          messageId: messageId.toString(),
+          clickAction: "CHAT_MESSAGE_CLICK",
+        },
+      });
+
+      this.logger.log(
+        `Push notification sent to user ${recipientId} for message ${messageId}`,
+      );
+    } catch (error) {
+      // Log error but don't throw - push notification failure shouldn't block message sending
+      this.logger.error(
+        `Failed to send push notification to user ${recipientId}:`,
+        error.message,
+      );
+    }
   }
 }
