@@ -104,8 +104,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         content: data.content,
       });
 
-      // Get session info
-      const session = await this.chatService.getOrCreateSession(
+      // Get session info from sender's perspective (otherUser = recipient)
+      const senderSession = await this.chatService.getOrCreateSession(
         senderId,
         data.recipientId
       );
@@ -116,17 +116,23 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Emit to sender (confirmation with newMessageSent event)
       this.server.to(`user:${senderId}`).emit("newMessageSent", {
         ...message,
-        sessionId: session.id,
-        session: session,
+        sessionId: senderSession.id,
+        session: senderSession,
         recipientOnline: isRecipientOnline,
       });
 
       // If recipient is online, send message in real-time
       if (isRecipientOnline) {
+        // Get session from recipient's perspective (otherUser = sender)
+        const recipientSession = await this.chatService.getOrCreateSession(
+          data.recipientId,
+          senderId
+        );
+
         this.server.to(`user:${data.recipientId}`).emit("newMessage", {
           ...message,
-          sessionId: session.id,
-          session: session,
+          sessionId: recipientSession.id,
+          session: recipientSession,
         });
         console.log(
           `Message sent in real-time to online user ${data.recipientId}`
@@ -138,7 +144,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           data.recipientId,
           senderId,
           data.content,
-          session.id,
+          senderSession.id,
           message.id,
         );
       }

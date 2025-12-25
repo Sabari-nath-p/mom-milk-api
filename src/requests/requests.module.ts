@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { PrismaModule } from "../prisma/prisma.module";
 import { FirebaseModule } from "../firebase/firebase.module";
 import { MailModule } from "../mail/mail.module";
+import { ChatModule } from "../chat/chat.module";
 import { RequestController } from "./controllers/request.controller";
 import { GeolocationController } from "./controllers/geolocation.controller";
 import { RequestService } from "./services/request.service";
@@ -13,6 +14,7 @@ import { JwtModule } from "@nestjs/jwt";
     PrismaModule,
     FirebaseModule,
     MailModule,
+    ChatModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || "your-secret-key",
       signOptions: { expiresIn: "24h" },

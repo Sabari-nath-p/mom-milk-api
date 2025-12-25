@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { GeolocationService } from './geolocation.service';
 import { FirebaseService } from '../../firebase/firebase.service';
 import { MailService } from '../../mail/mail.service';
+import { ChatService } from '../../chat/chat.service';
 import {
     CreateMilkRequestDto,
     UpdateMilkRequestDto,
@@ -24,6 +25,7 @@ export class RequestService {
         private geolocationService: GeolocationService,
         private firebaseService: FirebaseService,
         private mailService: MailService,
+        private chatService: ChatService,
     ) { }
 
     // Milk Request Management
@@ -328,6 +330,15 @@ export class RequestService {
             } catch (error) {
                 console.error('Failed to send FCM notification:', error);
             }
+        }
+
+        // Automatically create chat session between donor and requester
+        try {
+            await this.chatService.getOrCreateSession(donorId, request.requesterId);
+            console.log(`Chat session created between donor ${donorId} and requester ${request.requesterId}`);
+        } catch (error) {
+            console.error('Failed to create chat session:', error);
+            // Don't fail the request if chat session creation fails
         }
 
         return this.formatRequestResponse(updatedRequest);
