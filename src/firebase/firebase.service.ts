@@ -116,7 +116,7 @@ export class FirebaseService {
                 },
             };
 
-            const response = await admin.messaging().send(fcmMessage);
+            const response = await this.app.messaging().send(fcmMessage);
             this.logger.log(`Successfully sent message: ${response}`);
             return response;
         } catch (error) {
@@ -160,7 +160,7 @@ export class FirebaseService {
                 },
             };
 
-            const response = await admin.messaging().sendEachForMulticast(message);
+            const response = await this.app.messaging().sendEachForMulticast(message);
             this.logger.log(`Successfully sent multicast message to ${response.successCount} devices`);
 
             if (response.failureCount > 0) {
@@ -184,7 +184,7 @@ export class FirebaseService {
      */
     async subscribeToTopic(tokens: string[], topic: string): Promise<any> {
         try {
-            const response = await admin.messaging().subscribeToTopic(tokens, topic);
+            const response = await this.app.messaging().subscribeToTopic(tokens, topic);
             this.logger.log(`Successfully subscribed ${response.successCount} tokens to topic: ${topic}`);
             return response;
         } catch (error) {
@@ -198,7 +198,7 @@ export class FirebaseService {
      */
     async unsubscribeFromTopic(tokens: string[], topic: string): Promise<any> {
         try {
-            const response = await admin.messaging().unsubscribeFromTopic(tokens, topic);
+            const response = await this.app.messaging().unsubscribeFromTopic(tokens, topic);
             this.logger.log(`Successfully unsubscribed ${response.successCount} tokens from topic: ${topic}`);
             return response;
         } catch (error) {
@@ -242,7 +242,7 @@ export class FirebaseService {
                 },
             };
 
-            const response = await admin.messaging().send(message);
+            const response = await this.app.messaging().send(message);
             this.logger.log(`Successfully sent topic message: ${response}`);
             return response;
         } catch (error) {
@@ -256,7 +256,7 @@ export class FirebaseService {
      */
     async validateToken(token: string): Promise<boolean> {
         try {
-            await admin.messaging().send({
+            await this.app.messaging().send({
                 token,
                 data: { test: 'true' },
             }, true); // dry run
