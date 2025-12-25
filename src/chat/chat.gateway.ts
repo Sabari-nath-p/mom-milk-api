@@ -113,19 +113,34 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Check if recipient is online
       const isRecipientOnline = this.isUserOnline(data.recipientId);
 
-      // Emit to sender (confirmation with newMessageSent event)
-      this.server.to(`user:${senderId}`).emit("newMessageSent", {
-        ...message,
+      // Prepare message response with consistent data model
+      const messageResponse = {
+        id: message.id,
+        content: message.content,
+        senderId: message.senderId,
         sessionId: session.id,
+        isRead: message.isRead,
+        isDelivered: message.isDelivered,
+        sentAt: message.sentAt,
+        createdAt: message.createdAt,
         session: session,
         recipientOnline: isRecipientOnline,
-      });
+      };
+
+      // Emit to sender (confirmation with newMessageSent event)
+      this.server.to(`user:${senderId}`).emit("newMessageSent", messageResponse);
 
       // If recipient is online, send message in real-time
       if (isRecipientOnline) {
         this.server.to(`user:${data.recipientId}`).emit("newMessage", {
-          ...message,
+          id: message.id,
+          content: message.content,
+          senderId: message.senderId,
           sessionId: session.id,
+          isRead: message.isRead,
+          isDelivered: message.isDelivered,
+          sentAt: message.sentAt,
+          createdAt: message.createdAt,
           session: session,
         });
         console.log(
