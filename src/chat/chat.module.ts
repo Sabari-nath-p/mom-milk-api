@@ -12,7 +12,6 @@ import { FirebaseModule } from '../firebase/firebase.module';
         FirebaseModule,
         JwtModule.register({
             secret: process.env.JWT_SECRET || 'your-secret-key',
-            signOptions: { expiresIn: '7d' },
         }),
     ],
     controllers: [ChatController],

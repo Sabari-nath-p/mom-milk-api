@@ -17,7 +17,6 @@ import { JwtModule } from "@nestjs/jwt";
     ChatModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || "your-secret-key",
-      signOptions: { expiresIn: "24h" },
     }),
   ],
   controllers: [RequestController, GeolocationController],
