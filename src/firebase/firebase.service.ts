@@ -111,7 +111,12 @@ export class FirebaseService {
                         aps: {
                             sound: 'default',
                             badge: 1,
+                            contentAvailable: true,
+                            mutableContent: true,
                         },
+                    },
+                    headers: {
+                        'apns-priority': '10',
                     },
                 },
             };
@@ -155,7 +160,12 @@ export class FirebaseService {
                         aps: {
                             sound: 'default',
                             badge: 1,
+                            contentAvailable: true,
+                            mutableContent: true,
                         },
+                    },
+                    headers: {
+                        'apns-priority': '10',
                     },
                 },
             };
@@ -237,7 +247,12 @@ export class FirebaseService {
                         aps: {
                             sound: 'default',
                             badge: 1,
+                            contentAvailable: true,
+                            mutableContent: true,
                         },
+                    },
+                    headers: {
+                        'apns-priority': '10',
                     },
                 },
             };
