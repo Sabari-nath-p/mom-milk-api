@@ -129,13 +129,14 @@ def count_csv_rows(csv_path: str) -> int:
 # Prepare insert; used by worker threads
 # ----------------------------
 INSERT_QUERY = f"""
-INSERT INTO {TABLE_NAME} (country, zipcode, placeName, latitude, longitude)
-VALUES (%s, %s, %s, %s, %s)
+INSERT INTO {TABLE_NAME} (country, zipcode, placeName, latitude, longitude, createdAt, updatedAt)
+VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
 ON DUPLICATE KEY UPDATE
     country = VALUES(country),
     placeName = VALUES(placeName),
     latitude = VALUES(latitude),
-    longitude = VALUES(longitude);
+    longitude = VALUES(longitude),
+    updatedAt = NOW();
 """
 
 
