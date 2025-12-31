@@ -38,7 +38,7 @@ from openpyxl import load_workbook
 # ----------------------------
 DB_HOST = "localhost"
 DB_USER = "palqardev"
-DB_PASSWORD = "Parasya@2025"
+DB_PASSWORD = "Palqar@2026"
 DB_NAME = "moms_milk_db"
 TABLE_NAME = "zip_codes"
 
