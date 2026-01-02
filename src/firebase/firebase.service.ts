@@ -24,122 +24,79 @@ export class FirebaseService {
   private app: admin.app.App;
 
   constructor(private prisma: PrismaService) {
-    this.initializeFirebase();
+    if (admin.apps.length > 0) {
+      this.app = admin.apps[0];
+      this.logger.log("Reusing existing Firebase Admin app");
+    } else {
+      this.initializeFirebase();
+    }
   }
 
   private initializeFirebase() {
-    try {
-      // Check if Firebase app is already initialized
-      if (admin.apps.length === 0) {
-        // Try to use environment variables first, then fall back to service account file
-        const serviceAccount = this.getServiceAccountConfig();
+    const serviceAccount = this.getServiceAccountConfig();
 
-        this.app = admin.initializeApp({
-          credential: admin.credential.cert(
-            serviceAccount as admin.ServiceAccount
-          ),
-          projectId: serviceAccount.project_id,
-        });
-        this.logger.log("Firebase Admin SDK initialized successfully");
-      } else {
-        this.app = admin.apps[0];
-        this.logger.log("Firebase Admin SDK already initialized");
-      }
-    } catch (error) {
-      this.logger.error("Failed to initialize Firebase Admin SDK:", error);
-      // Don't throw error to prevent app from crashing
-      // Firebase features will be disabled but app will still work
-      this.logger.warn("Firebase features will be disabled");
-    }
+    this.app = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+      projectId: serviceAccount.project_id,
+    });
+
+    this.logger.log("Firebase Admin SDK initialized successfully");
   }
 
   private getServiceAccountConfig() {
-    // Try environment variables first (for Docker/production)
     if (
-      process.env.FIREBASE_PROJECT_ID &&
-      process.env.FIREBASE_PRIVATE_KEY &&
-      process.env.FIREBASE_CLIENT_EMAIL
+      !process.env.FIREBASE_PROJECT_ID ||
+      !process.env.FIREBASE_PRIVATE_KEY ||
+      !process.env.FIREBASE_CLIENT_EMAIL
     ) {
-      return {
-        type: "service_account",
-        project_id: process.env.FIREBASE_PROJECT_ID,
-        private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID || "",
-        private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-        client_email: process.env.FIREBASE_CLIENT_EMAIL,
-        client_id: process.env.FIREBASE_CLIENT_ID || "",
-        auth_uri: "https://accounts.google.com/o/oauth2/auth",
-        token_uri: "https://oauth2.googleapis.com/token",
-        auth_provider_x509_cert_url:
-          "https://www.googleapis.com/oauth2/v1/certs",
-        client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL || "",
-        universe_domain: "googleapis.com",
-      };
+      throw new Error("Missing Firebase environment variables");
     }
 
-    // Fall back to local service account file (for development)
-    try {
-      const { readFileSync } = require("fs");
-      const { join } = require("path");
-      const serviceAccountPath = join(
-        process.cwd(),
-        "firebase-service-account.json"
-      );
-      return JSON.parse(readFileSync(serviceAccountPath, "utf8"));
-    } catch (error) {
-      throw new Error(
-        "Firebase configuration not found. Please set environment variables or provide firebase-service-account.json file."
-      );
-    }
+    return {
+      type: "service_account",
+      project_id: process.env.FIREBASE_PROJECT_ID,
+      private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      client_email: process.env.FIREBASE_CLIENT_EMAIL,
+      client_id: process.env.FIREBASE_CLIENT_ID,
+      auth_uri: "https://accounts.google.com/o/oauth2/auth",
+      token_uri: "https://oauth2.googleapis.com/token",
+      auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+      client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
+    };
   }
 
   /**
    * Send a notification to a single device
    */
   async sendNotification(message: FCMMessage): Promise<string> {
-    try {
-      if (!this.app) {
-        this.logger.warn("Firebase not initialized, skipping notification");
-        return "firebase-not-initialized";
-      }
-
-      const fcmMessage: admin.messaging.Message = {
-        token: message.token,
-        notification: {
-          title: message.notification.title,
-          body: message.notification.body,
-          imageUrl: message.notification.imageUrl,
-        },
-        data: message.data || {},
-        android: message.android || {
-          priority: "high",
-          notification: {
-            priority: "high",
-            defaultSound: true,
-            defaultVibrateTimings: true,
-          },
-        },
-        apns: message.apns || {
-          payload: {
-            aps: {
-              sound: "default",
-              badge: 1,
-              contentAvailable: true,
-              mutableContent: true,
-            },
-          },
-          headers: {
-            "apns-priority": "10",
-          },
-        },
-      };
-
-      const response = await this.app.messaging().send(fcmMessage);
-      this.logger.log(`Successfully sent message: ${response}`);
-      return response;
-    } catch (error) {
-      this.logger.error("Error sending FCM message:", error);
-      throw error;
+    if (!this.app) {
+      throw new Error("Firebase Admin SDK not initialized");
     }
+
+    const fcmMessage: admin.messaging.Message = {
+      token: message.token,
+      notification: {
+        title: message.notification.title,
+        body: message.notification.body,
+        imageUrl: message.notification.imageUrl,
+      },
+      data: message.data || {},
+      android: {
+        priority: "high",
+        notification: {
+          priority: "high",
+          defaultSound: true,
+          defaultVibrateTimings: true,
+        },
+      },
+      apns: this.buildIOSApnsPayload(
+        message.notification.title,
+        message.notification.body
+      ),
+    };
+
+    return this.app.messaging().send(fcmMessage);
   }
 
   /**
@@ -172,8 +129,6 @@ export class FirebaseService {
             aps: {
               sound: "default",
               badge: 1,
-              contentAvailable: true,
-              mutableContent: true,
             },
           },
           headers: {
@@ -271,8 +226,6 @@ export class FirebaseService {
             aps: {
               sound: "default",
               badge: 1,
-              contentAvailable: true,
-              mutableContent: true,
             },
           },
           headers: {
@@ -491,5 +444,28 @@ export class FirebaseService {
       );
       throw error;
     }
+  }
+
+  private buildIOSApnsPayload(
+    title: string,
+    body: string
+  ): admin.messaging.ApnsConfig {
+    return {
+      headers: {
+        "apns-push-type": "alert",
+        "apns-priority": "10",
+      },
+      payload: {
+        aps: {
+          alert: {
+            title,
+            body,
+          },
+          sound: "default",
+          badge: 1,
+          "mutable-content": 1,
+        },
+      },
+    };
   }
 }

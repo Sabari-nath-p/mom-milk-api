@@ -53,8 +53,6 @@ async function testIOSNotification() {
                 aps: {
                     sound: 'default',
                     badge: 1,
-                    contentAvailable: true,
-                    mutableContent: true,
                 },
             },
             headers: {
