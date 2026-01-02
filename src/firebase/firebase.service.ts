@@ -76,27 +76,27 @@ export class FirebaseService {
 
     const fcmMessage: admin.messaging.Message = {
       token: message.token,
-      notification: {
-        title: message.notification.title,
-        body: message.notification.body,
-        imageUrl: message.notification.imageUrl,
-      },
+
       data: message.data || {},
+
       android: {
         priority: "high",
         notification: {
-          priority: "high",
-          defaultSound: true,
-          defaultVibrateTimings: true,
+          title: message.notification.title,
+          body: message.notification.body,
+          sound: "default",
         },
       },
+
       apns: this.buildIOSApnsPayload(
         message.notification.title,
         message.notification.body
       ),
     };
 
-    return this.app.messaging().send(fcmMessage);
+    const response = await this.app.messaging().send(fcmMessage);
+    this.logger.log(`Successfully sent message: ${response}`);
+    return response;
   }
 
   /**
@@ -110,31 +110,14 @@ export class FirebaseService {
     try {
       const message: admin.messaging.MulticastMessage = {
         tokens,
-        notification: {
-          title: notification.title,
-          body: notification.body,
-          imageUrl: notification.imageUrl,
-        },
         data: data || {},
         android: {
           priority: "high",
           notification: {
-            priority: "high",
-            defaultSound: true,
-            defaultVibrateTimings: true,
+            sound: "default",
           },
         },
-        apns: {
-          payload: {
-            aps: {
-              sound: "default",
-              badge: 1,
-            },
-          },
-          headers: {
-            "apns-priority": "10",
-          },
-        },
+        apns: this.buildIOSApnsPayload(notification.title, notification.body),
       };
 
       const response = await this.app.messaging().sendEachForMulticast(message);
@@ -207,31 +190,14 @@ export class FirebaseService {
     try {
       const message: admin.messaging.Message = {
         topic,
-        notification: {
-          title: notification.title,
-          body: notification.body,
-          imageUrl: notification.imageUrl,
-        },
         data: data || {},
         android: {
           priority: "high",
           notification: {
-            priority: "high",
-            defaultSound: true,
-            defaultVibrateTimings: true,
+            sound: "default",
           },
         },
-        apns: {
-          payload: {
-            aps: {
-              sound: "default",
-              badge: 1,
-            },
-          },
-          headers: {
-            "apns-priority": "10",
-          },
-        },
+        apns: this.buildIOSApnsPayload(notification.title, notification.body),
       };
 
       const response = await this.app.messaging().send(message);
