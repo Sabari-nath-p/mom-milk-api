@@ -516,6 +516,16 @@ export class RequestService {
         // Determine if US-based by checking if phone number starts with +1
         const isUSBased = requester.phone?.startsWith('+1') || false;
 
+        // Get reference zipcode coordinates once (optimization: single query)
+        const referenceCoords = await this.geolocationService.getZipCodeCoordinates(referenceZipcode);
+        
+        if (!referenceCoords) {
+            return {
+                data: [],
+                pagination: this.createPaginationResponse(page, limit, 0),
+            };
+        }
+
         // Base where clause for all donors
         const baseWhereClause: any = {
             userType: UserType.DONOR,
@@ -574,18 +584,47 @@ export class RequestService {
             },
         });
 
+        // OPTIMIZATION: Batch fetch all unique zipcodes to avoid N+1 queries
+        const uniqueZipcodes = [...new Set(allDonors.map(d => d.zipcode))];
+        const zipCodesData = await this.prisma.zipCode.findMany({
+            where: {
+                zipcode: { in: uniqueZipcodes }
+            },
+            select: {
+                zipcode: true,
+                latitude: true,
+                longitude: true,
+                placeName: true,
+                country: true,
+            },
+        });
+
+        // Create a map for O(1) zipcode lookup
+        const zipCodeMap = new Map(zipCodesData.map(z => [z.zipcode, z]));
+
         // Calculate distances for all donors and filter by maxDistance (only if no specific zipcode filter)
         const donorsWithDistance: DonorSearchResultDto[] = [];
 
         for (const donor of allDonors) {
-            const distance = await this.calculateRequestDistance(referenceZipcode, donor.zipcode);
+            // Use cached zipcode data instead of querying database
+            const zipCodeData = zipCodeMap.get(donor.zipcode);
+            
+            let distance: number | null = null;
+            if (zipCodeData) {
+                // Calculate distance directly without additional database call
+                distance = this.geolocationService.calculateDistance(
+                    referenceCoords.latitude,
+                    referenceCoords.longitude,
+                    zipCodeData.latitude,
+                    zipCodeData.longitude
+                );
+            }
 
             // Include donor if:
             // 1. Specific zipcode filter is provided (include all), OR
             // 2. Distance is calculated (including 0) and within maxDistance, OR  
             // 3. Distance cannot be calculated (zipcode not in database) - we include them but show "Distance unknown"
             if (filterOptions.zipcode || distance === null || distance <= maxDistance) {
-                const zipCodeData = await this.geolocationService.getZipCodeCoordinates(donor.zipcode);
 
                 // Convert distance based on country
                 let displayDistance = distance;
