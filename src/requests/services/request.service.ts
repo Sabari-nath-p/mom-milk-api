@@ -310,7 +310,6 @@ export class RequestService {
                 donor.name,
                 donor.phone || 'Not available',
                 request.title,
-                donor.email,
                 donor.facebookLink,
                 donor.instagramLink
             );
@@ -514,6 +513,10 @@ export class RequestService {
         // Use provided zipcode parameter or fall back to requester's zipcode
         const referenceZipcode = filterOptions.zipcode || requester.zipcode;
 
+        // Get reference zipcode country to determine unit (miles for US, km for others)
+        const referenceZipData = await this.geolocationService.getZipCodeCoordinates(referenceZipcode);
+        const isUSBased = referenceZipData?.country === 'US';
+
         // Base where clause for all donors
         const baseWhereClause: any = {
             userType: UserType.DONOR,
@@ -585,12 +588,32 @@ export class RequestService {
             if (filterOptions.zipcode || distance === null || distance <= maxDistance) {
                 const zipCodeData = await this.geolocationService.getZipCodeCoordinates(donor.zipcode);
 
+                // Convert distance based on country
+                let displayDistance = distance;
+                let unit = 'km';
+
+                if (isUSBased && distance !== null) {
+                    // Convert km to miles (1 km = 0.621371 miles)
+                    displayDistance = distance * 0.621371;
+                    unit = 'mi';
+                }
+
                 // Format distance text for better UX
-                const distanceText = distance !== null ?
-                    (distance < 1 ?
-                        `${Math.round(distance * 1000)}m away` :
-                        `${distance.toFixed(1)} km away`
-                    ) : 'Distance unknown';
+                let distanceText: string;
+                if (distance === null) {
+                    distanceText = 'N/A';
+                } else if (distance >= 9999) {
+                    distanceText = 'N/A';
+                } else if (displayDistance < 1) {
+                    // Show in meters/feet for very short distances
+                    if (isUSBased) {
+                        distanceText = `${Math.round(displayDistance * 5280)} ft`;
+                    } else {
+                        distanceText = `${Math.round(displayDistance * 1000)} m`;
+                    }
+                } else {
+                    distanceText = `${displayDistance.toFixed(1)} ${unit}`;
+                }
 
                 // Build full address string
                 const fullAddress = zipCodeData ? [
@@ -693,7 +716,7 @@ export class RequestService {
         if (wasUnavailable && isBecomingAvailable) {
             const shouldSendEmail = this.shouldSendAvailabilityEmail(donor.lastAvailabilityNotificationAt);
             await this.notifyUsersOfAvailability(donorId, donor.name, shouldSendEmail);
-            
+
             // Update the last notification timestamp if email was sent
             if (shouldSendEmail) {
                 await this.prisma.user.update({
@@ -1080,7 +1103,7 @@ export class RequestService {
 
         const now = new Date();
         const hoursSinceLastNotification = (now.getTime() - lastNotificationAt.getTime()) / (1000 * 60 * 60);
-        
+
         // Only allow email if 24 hours have passed
         return hoursSinceLastNotification >= 24;
     }
@@ -1135,7 +1158,6 @@ export class RequestService {
                         request.requester.name,
                         donorName,
                         request.title,
-                        donor?.email,
                         donor?.facebookLink,
                         donor?.instagramLink
                     );

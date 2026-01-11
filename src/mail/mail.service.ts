@@ -233,7 +233,6 @@ export class MailService {
         donorName: string,
         donorPhone: string,
         requestTitle: string,
-        donorEmail?: string,
         donorFacebookLink?: string,
         donorInstagramLink?: string
     ): Promise<boolean> {
@@ -241,10 +240,9 @@ export class MailService {
         
         // Build social links HTML if available
         let socialLinksHtml = '';
-        if (donorEmail || donorFacebookLink || donorInstagramLink) {
+        if (donorFacebookLink || donorInstagramLink) {
             socialLinksHtml = '<div class="detail-row"><span class="label">Connect:</span> ';
             const links = [];
-            if (donorEmail) links.push(`<a href="mailto:${donorEmail}">Email</a>`);
             if (donorFacebookLink) links.push(`<a href="${donorFacebookLink}" target="_blank">Facebook</a>`);
             if (donorInstagramLink) links.push(`<a href="${donorInstagramLink}" target="_blank">Instagram</a>`);
             socialLinksHtml += links.join(' | ') + '</div>';
@@ -301,9 +299,8 @@ export class MailService {
         `;
 
         let socialLinksText = '';
-        if (donorEmail || donorFacebookLink || donorInstagramLink) {
+        if (donorFacebookLink || donorInstagramLink) {
             socialLinksText = '\n\nConnect with donor:';
-            if (donorEmail) socialLinksText += `\nEmail: ${donorEmail}`;
             if (donorFacebookLink) socialLinksText += `\nFacebook: ${donorFacebookLink}`;
             if (donorInstagramLink) socialLinksText += `\nInstagram: ${donorInstagramLink}`;
         }
@@ -318,7 +315,6 @@ export class MailService {
         buyerName: string,
         donorName: string,
         requestTitle: string,
-        donorEmail?: string,
         donorFacebookLink?: string,
         donorInstagramLink?: string
     ): Promise<boolean> {
@@ -327,17 +323,13 @@ export class MailService {
         // Build contact section if any contact info is provided
         let contactHtml = '';
         let contactText = '';
-        if (donorEmail || donorFacebookLink || donorInstagramLink) {
+        if (donorFacebookLink || donorInstagramLink) {
             contactHtml = `
                 <div style="background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0;">
                     <h3 style="margin-top: 0; color: #FF69B4;">Connect with ${donorName}:</h3>
             `;
             contactText = `\n\nConnect with ${donorName}:\n`;
 
-            if (donorEmail) {
-                contactHtml += `<p style="margin: 10px 0;">📧 <strong>Email:</strong> <a href="mailto:${donorEmail}" style="color: #FF69B4;">${donorEmail}</a></p>`;
-                contactText += `Email: ${donorEmail}\n`;
-            }
             if (donorFacebookLink) {
                 contactHtml += `<p style="margin: 10px 0;">📘 <strong>Facebook:</strong> <a href="${donorFacebookLink}" style="color: #FF69B4;" target="_blank">View Profile</a></p>`;
                 contactText += `Facebook: ${donorFacebookLink}\n`;

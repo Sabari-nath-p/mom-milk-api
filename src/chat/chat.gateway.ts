@@ -32,7 +32,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private chatService: ChatService,
     private jwtService: JwtService
-  ) {}
+  ) { }
 
   async handleConnection(client: AuthenticatedSocket) {
     try {

@@ -16,4 +16,4 @@ import { JwtModule } from "@nestjs/jwt";
   providers: [BabiesService, BabiesAnalyticsService],
   exports: [BabiesService, BabiesAnalyticsService],
 })
-export class BabiesModule {}
+export class BabiesModule { }

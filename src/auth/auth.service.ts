@@ -2,6 +2,7 @@ import { Injectable, ConflictException, UnauthorizedException, NotFoundException
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { FirebaseService } from '../firebase/firebase.service';
 import {
     SendOtpDto,
     VerifyOtpDto,
@@ -24,6 +25,7 @@ export class AuthService {
         private prisma: PrismaService,
         private jwtService: JwtService,
         private mailService: MailService,
+        private firebaseService: FirebaseService,
     ) { }
 
     async sendOtp(sendOtpDto: SendOtpDto): Promise<OtpResponseDto> {
@@ -182,6 +184,11 @@ export class AuthService {
             data: userData,
         });
 
+        // Notify nearby buyers if new user is a donor
+        if (completeProfileDto.userType === UserType.DONOR) {
+            await this.notifyNearbyBuyersOfNewDonor(newUser.id, newUser.name, newUser.zipcode);
+        }
+
         return this.generateAuthResponse(newUser);
     }
 
@@ -330,4 +337,120 @@ export class AuthService {
 
         return user;
     }
+
+    /**
+     * Notify nearby buyers when a new donor registers
+     */
+    private async notifyNearbyBuyersOfNewDonor(donorId: number, donorName: string, donorZipcode: string): Promise<void> {
+        try {
+            // Get donor's location coordinates
+            const donorLocation = await this.prisma.zipCode.findUnique({
+                where: { zipcode: donorZipcode },
+                select: { latitude: true, longitude: true, country: true },
+            });
+
+            if (!donorLocation) {
+                console.log(`Zipcode ${donorZipcode} not found in database`);
+                return;
+            }
+
+            const maxDistanceKm = 50;
+
+            // Get all active buyers
+            const buyers = await this.prisma.user.findMany({
+                where: {
+                    userType: UserType.BUYER,
+                    isActive: true,
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    zipcode: true,
+                    fcmToken: true,
+                },
+            });
+
+            // Check distance for each buyer and notify if within 50km
+            for (const buyer of buyers) {
+                const buyerLocation = await this.prisma.zipCode.findUnique({
+                    where: { zipcode: buyer.zipcode },
+                    select: { latitude: true, longitude: true },
+                });
+
+                if (!buyerLocation) continue;
+
+                // Calculate distance using Haversine formula
+                const distance = this.calculateDistance(
+                    donorLocation.latitude,
+                    donorLocation.longitude,
+                    buyerLocation.latitude,
+                    buyerLocation.longitude,
+                );
+
+                if (distance <= maxDistanceKm) {
+                    // Send email notification
+                    try {
+                        await this.mailService.sendEmail({
+                            to: buyer.email,
+                            subject: 'New Donor Available in Your Area',
+                            html: `
+                                <h2>Good News, ${buyer.name}!</h2>
+                                <p>A new donor, <strong>${donorName}</strong>, is now available in your region.</p>
+                            
+                                <p>Log in to your account to view their profile and connect with them.</p>
+                                <p>Best regards,<br>Mom's Milk Team</p>
+                            `,
+                        });
+                    } catch (error) {
+                        console.error(`Failed to send email to buyer ${buyer.id}:`, error);
+                    }
+
+                    // Send push notification if FCM token exists
+                    if (buyer.fcmToken) {
+                        try {
+                            await this.firebaseService.sendNotification({
+                                token: buyer.fcmToken,
+                                notification: {
+                                    title: 'New Donor in Your Area',
+                                    body: `${donorName} is now available in your region`,
+                                },
+                                data: {
+                                    type: 'NEW_DONOR',
+                                    donorId: donorId.toString(),
+                                    distance: distance.toFixed(1),
+                                },
+                            });
+                        } catch (error) {
+                            console.error(`Failed to send push notification to buyer ${buyer.id}:`, error);
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error notifying buyers of new donor:', error);
+        }
+    }
+
+    /**
+     * Calculate distance between two coordinates using Haversine formula
+     */
+    private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+        const R = 6371; // Earth's radius in kilometers
+        const dLat = this.toRadians(lat2 - lat1);
+        const dLon = this.toRadians(lon2 - lon1);
+
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    private toRadians(degrees: number): number {
+        return degrees * (Math.PI / 180);
+    }
 }
+
