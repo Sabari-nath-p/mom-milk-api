@@ -503,7 +503,7 @@ export class RequestService {
 
         const requester = await this.prisma.user.findUnique({
             where: { id: requesterId },
-            select: { zipcode: true },
+            select: { zipcode: true, phone: true },
         });
 
         if (!requester) {
@@ -513,9 +513,8 @@ export class RequestService {
         // Use provided zipcode parameter or fall back to requester's zipcode
         const referenceZipcode = filterOptions.zipcode || requester.zipcode;
 
-        // Get reference zipcode country to determine unit (miles for US, km for others)
-        const referenceZipData = await this.geolocationService.getZipCodeCoordinates(referenceZipcode);
-        const isUSBased = referenceZipData?.country === 'US';
+        // Determine if US-based by checking if phone number starts with +1
+        const isUSBased = requester.phone?.startsWith('+1') || false;
 
         // Base where clause for all donors
         const baseWhereClause: any = {

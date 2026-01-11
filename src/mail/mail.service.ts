@@ -142,7 +142,7 @@ export class MailService {
         requesterInstagramLink?: string
     ): Promise<boolean> {
         const subject = '🍼 New Milk Request Received';
-        
+
         // Build social links HTML if available
         let socialLinksHtml = '';
         if (requesterFacebookLink || requesterInstagramLink) {
@@ -158,7 +158,7 @@ export class MailService {
             }
             socialLinksHtml += '</div>';
         }
-        
+
         const html = `
             <!DOCTYPE html>
             <html>
@@ -237,7 +237,7 @@ export class MailService {
         donorInstagramLink?: string
     ): Promise<boolean> {
         const subject = '✅ Your Request Has Been Accepted!';
-        
+
         // Build social links HTML if available
         let socialLinksHtml = '';
         if (donorFacebookLink || donorInstagramLink) {
@@ -247,7 +247,7 @@ export class MailService {
             if (donorInstagramLink) links.push(`<a href="${donorInstagramLink}" target="_blank">Instagram</a>`);
             socialLinksHtml += links.join(' | ') + '</div>';
         }
-        
+
         const html = `
             <!DOCTYPE html>
             <html>
