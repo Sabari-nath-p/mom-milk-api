@@ -518,7 +518,7 @@ export class RequestService {
 
         // Get reference zipcode coordinates once (optimization: single query)
         const referenceCoords = await this.geolocationService.getZipCodeCoordinates(referenceZipcode);
-        
+
         if (!referenceCoords) {
             return {
                 data: [],
@@ -608,7 +608,7 @@ export class RequestService {
         for (const donor of allDonors) {
             // Use cached zipcode data instead of querying database
             const zipCodeData = zipCodeMap.get(donor.zipcode);
-            
+
             let distance: number | null = null;
             if (zipCodeData) {
                 // Calculate distance directly without additional database call
