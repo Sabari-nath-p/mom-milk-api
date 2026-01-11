@@ -42,10 +42,10 @@ export class AppController {
     })
     getAppConfig() {
         return {
-            minum_build_no_android: 1,
-            minum_build_no_ver_ios: 1,
-            current_build_no_android: 1,
-            current_build_no_ios: 1,
+            minum_build_no_android: 2,
+            minum_build_no_ver_ios: 2,
+            current_build_no_android: 4,
+            current_build_no_ios: 4,
         };
     }
 }
