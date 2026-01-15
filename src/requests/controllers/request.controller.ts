@@ -1,37 +1,38 @@
 import {
-    Controller,
-    Get,
-    Post,
-    Body,
-    Patch,
-    Param,
-    Query,
-    UseGuards,
-    Request,
-    ParseIntPipe
-} from '@nestjs/common';
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+  ParseIntPipe,
+} from "@nestjs/common";
 import {
-    ApiTags,
-    ApiOperation,
-    ApiResponse,
-    ApiBearerAuth,
-    ApiParam,
-    ApiQuery
-} from '@nestjs/swagger';
-import { RequestService } from '../services/request.service';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from "@nestjs/swagger";
+import { RequestService } from "../services/request.service";
+import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard";
 import {
-    CreateMilkRequestDto,
-    UpdateMilkRequestDto,
-    AcceptRequestDto,
-    UpdateAvailabilityDto,
-    DonorSearchFiltersDto,
-    RequestFiltersDto,
-    DonorSearchResultDto,
-    MilkRequestResponseDto,
-    NotificationDto,
-    SendRequestToSpecificDonorDto
-} from '../dto/request.dto';
+  CreateMilkRequestDto,
+  UpdateMilkRequestDto,
+  AcceptRequestDto,
+  UpdateAvailabilityDto,
+  DonorSearchFiltersDto,
+  RequestFiltersDto,
+  DonorSearchResultDto,
+  MilkRequestResponseDto,
+  NotificationDto,
+  SendRequestToSpecificDonorDto,
+} from "../dto/request.dto";
+import { AdminRequestFiltersDto } from "../dto/admin-request-filters.dto";
 
 @ApiTags("Milk Requests")
 @Controller("requests")
@@ -105,6 +106,28 @@ export class RequestController {
     @Query() filters: RequestFiltersDto
   ) {
     return this.requestService.getIncomingRequests(req.user.id, filters);
+  }
+
+  @Get("admin/all")
+  @ApiOperation({ summary: "Admin: List all milk requests" })
+  @ApiQuery({ name: "page", required: false })
+  @ApiQuery({ name: "limit", required: false })
+  @ApiQuery({ name: "status", required: false })
+  @ApiQuery({ name: "requestType", required: false })
+  @ApiQuery({ name: "urgency", required: false })
+  @ApiQuery({
+    name: "buyerName",
+    required: false,
+    description: "Search by requester (buyer) name",
+  })
+  @ApiQuery({
+    name: "donorName",
+    required: false,
+    description: "Search by donor name",
+  })
+  @ApiResponse({ status: 200, description: "Admin milk request list" })
+  async adminGetAllRequests(@Query() filters: AdminRequestFiltersDto) {
+    return this.requestService.adminGetAllRequests(filters);
   }
 
   // Availability Management
