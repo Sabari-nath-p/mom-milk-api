@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { FirebaseService } from '../firebase/firebase.service';
+import { GeolocationService } from '../requests/services/geolocation.service';
 import {
     SendOtpDto,
     VerifyOtpDto,
@@ -26,6 +27,7 @@ export class AuthService {
         private jwtService: JwtService,
         private mailService: MailService,
         private firebaseService: FirebaseService,
+        private geolocationService: GeolocationService,
     ) { }
 
     async sendOtp(sendOtpDto: SendOtpDto): Promise<OtpResponseDto> {
@@ -148,6 +150,15 @@ export class AuthService {
 
         if (existingUser) {
             throw new ConflictException('User already exists with this email');
+        }
+
+        // Fetch coordinates for the zipcode (this will auto-save to DB if needed)
+        // If it fails or returns null, we can proceed but location features might be limited
+        try {
+            await this.geolocationService.getZipCodeCoordinates(completeProfileDto.zipcode);
+        } catch (geoError) {
+            console.warn(`Failed to fetch coordinates for zipcode ${completeProfileDto.zipcode}:`, geoError);
+            // Continue with profile creation even if geolocation fails
         }
 
         // Create new user

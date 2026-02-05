@@ -5,6 +5,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as csv from 'csv-parser';
 import * as XLSX from 'xlsx';
+import { Client, AddressType } from '@googlemaps/google-maps-services-js';
+import { ConfigService } from '@nestjs/config';
 
 export interface ZipCodeData {
     country: string;
@@ -16,7 +18,14 @@ export interface ZipCodeData {
 
 @Injectable()
 export class GeolocationService {
-    constructor(private prisma: PrismaService) { }
+    private googleMapsClient: Client;
+
+    constructor(
+        private prisma: PrismaService,
+        private configService: ConfigService
+    ) {
+        this.googleMapsClient = new Client({});
+    }
 
     /**
      * Calculate distance between two coordinates using Haversine formula
@@ -48,6 +57,7 @@ export class GeolocationService {
 
     /**
      * Get coordinates for a zipcode
+     * Fallback to Google Geocoding API if not found in DB
      */
     async getZipCodeCoordinates(zipcode: string): Promise<{
         latitude: number;
@@ -55,6 +65,7 @@ export class GeolocationService {
         placeName: string;
         country: string;
     } | null> {
+        // 1. Try to find in database
         const zipCodeData = await this.prisma.zipCode.findUnique({
             where: { zipcode },
             select: {
@@ -65,7 +76,85 @@ export class GeolocationService {
             },
         });
 
-        return zipCodeData;
+        if (zipCodeData) {
+            return zipCodeData;
+        }
+
+        // 2. If not found, try Google Geocoding API
+        console.log(`Zipcode ${zipcode} not found in DB, trying Google Geocoding API...`);
+        return this.fetchFromGoogleGeocoding(zipcode);
+    }
+
+    /**
+     * Fetch zipcode details from Google Geocoding API and save to database
+     */
+    private async fetchFromGoogleGeocoding(zipcode: string): Promise<{
+        latitude: number;
+        longitude: number;
+        placeName: string;
+        country: string;
+    } | null> {
+        const apiKey = this.configService.get<string>('GOOGLE_GEOCODING_API_KEY');
+        
+        if (!apiKey || apiKey === 'your-google-api-key-here' || apiKey === 'YOUR_API_KEY_HERE') {
+            console.warn('Google Geocoding API key is missing or not configured');
+            return null;
+        }
+
+        try {
+            const response = await this.googleMapsClient.geocode({
+                params: {
+                    address: zipcode,
+                    key: apiKey,
+                },
+            });
+
+            if (response.data.results.length > 0) {
+                const result = response.data.results[0];
+                const location = result.geometry.location;
+                
+                // Extract country and place name
+                let country = 'Unknown';
+                let placeName = formattedAddressToPlaceName(result.formatted_address);
+
+                for (const component of result.address_components) {
+                    if (component.types.includes(AddressType.country)) {
+                        country = component.long_name;
+                    }
+                }
+
+                const zipCodeData = {
+                    zipcode: zipcode,
+                    latitude: location.lat,
+                    longitude: location.lng,
+                    country: country,
+                    placeName: placeName,
+                };
+
+                // Save to database for future use
+                try {
+                    await this.createZipCode(zipCodeData);
+                    console.log(`Successfully fetched and saved zipcode ${zipcode} from Google API`);
+                } catch (dbError) {
+                    console.warn(`Failed to save fetched zipcode ${zipcode} to DB:`, dbError.message);
+                    // Continue even if save fails, return the data
+                }
+
+                return {
+                    latitude: zipCodeData.latitude,
+                    longitude: zipCodeData.longitude,
+                    placeName: zipCodeData.placeName,
+                    country: zipCodeData.country
+                };
+            }
+            
+            console.warn(`No results found for zipcode ${zipcode} from Google API`);
+            return null;
+
+        } catch (error) {
+            console.error('Error fetching from Google Geocoding API:', error.message);
+            return null;
+        }
     }
 
     /**
@@ -562,4 +651,16 @@ export class GeolocationService {
             lastImported: lastRecord?.createdAt,
         };
     }
+}
+
+function formattedAddressToPlaceName(formattedAddress: string): string {
+    // Simple helper to shorten the formatted address if needed
+    // Google returns "City, State Zip, Country" usually
+    // We might want just "City, State"
+    const parts = formattedAddress.split(',');
+    if (parts.length > 1) {
+        // Return first two parts (usually City, State/Province)
+        return parts.slice(0, 2).join(',').trim();
+    }
+    return formattedAddress;
 }

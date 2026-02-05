@@ -7,6 +7,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
 import { MailModule } from '../mail/mail.module';
 import { FirebaseModule } from '../firebase/firebase.module';
+import { RequestModule } from '../requests/requests.module';
 
 @Module({
     imports: [
@@ -14,6 +15,7 @@ import { FirebaseModule } from '../firebase/firebase.module';
         PassportModule,
         MailModule,
         FirebaseModule,
+        RequestModule,
         JwtModule.register({
             secret: process.env.JWT_SECRET || 'your-secret-key',
         }),
