@@ -382,4 +382,59 @@ export class MailService {
 
         return this.sendEmail({ to: buyerEmail, subject, html, text });
     }
+
+    async sendZipcodeNotFoundEmail(zipcode: string, userEmail: string): Promise<boolean> {
+        const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER || 'admin@momsmilk.com';
+        const subject = '⚠️ Missing Zipcode Report';
+
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #FFA500; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+                    .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }
+                    .alert-box { background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 5px solid #FFA500; }
+                    .detail-row { margin: 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+                    .label { font-weight: bold; color: #666; }
+                    .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #777; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>⚠️ Missing Zipcode Report</h1>
+                    </div>
+                    <div class="content">
+                        <h2>Admin Alert,</h2>
+                        <div class="alert-box">
+                            <p>A user attempted to register with a zipcode that was not found in the database or Google Geocoding API.</p>
+                        </div>
+                        <div class="details">
+                            <div class="detail-row">
+                                <span class="label">Missing Zipcode:</span> ${zipcode}
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">User Email:</span> ${userEmail}
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Time:</span> ${new Date().toLocaleString()}
+                            </div>
+                        </div>
+                        <p>Please verify this zipcode and add it to the database manually if valid.</p>
+                        <div class="footer">
+                            <p>This is an automated system report.</p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        const text = `⚠️ Missing Zipcode Report\n\nA user attempted to register with a zipcode that was not found.\n\nMissing Zipcode: ${zipcode}\nUser Email: ${userEmail}\nTime: ${new Date().toLocaleString()}\n\nPlease verify this zipcode and add it to the database manually if valid.`;
+
+        return this.sendEmail({ to: adminEmail, subject, html, text });
+    }
 }

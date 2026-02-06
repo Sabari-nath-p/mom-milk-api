@@ -1,0 +1,3004 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Moms Milk API",
+        "description": "API documentation for Moms Milk application",
+        "version": "1.0"
+    },
+    "tags": [
+        {
+            "name": "Authentication"
+        },
+        {
+            "name": "users"
+        },
+        {
+            "name": "babies"
+        },
+        {
+            "name": "feed-logs"
+        },
+        {
+            "name": "diaper-logs"
+        },
+        {
+            "name": "sleep-logs"
+        },
+        {
+            "name": "Milk Requests"
+        },
+        {
+            "name": "Donations"
+        },
+        {
+            "name": "Chat"
+        },
+        {
+            "name": "Analytics"
+        },
+        {
+            "name": "Contact Form"
+        }
+    ],
+    "servers": [
+        {
+            "url": "http://localhost:3003",
+            "description": "Local Development Server"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "bearer": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        },
+        "schemas": {
+            "SendOtpDto": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "example": "user@example.com"
+                    }
+                },
+                "required": [
+                    "email"
+                ]
+            },
+            "VerifyOtpDto": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "example": "user@example.com"
+                    },
+                    "otp": {
+                        "type": "string",
+                        "example": "123456"
+                    }
+                },
+                "required": [
+                    "email",
+                    "otp"
+                ]
+            },
+            "CompleteProfileDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "example": "+1234567890"
+                    },
+                    "zipcode": {
+                        "type": "string",
+                        "example": "12345"
+                    },
+                    "userType": {
+                        "type": "string",
+                        "enum": [
+                            "DONOR",
+                            "BUYER",
+                            "ADMIN"
+                        ],
+                        "example": "BUYER"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Healthy lifestyle"
+                    },
+                    "bloodGroup": {
+                        "type": "string",
+                        "example": "O+"
+                    },
+                    "babyDeliveryDate": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T00:00:00.000Z"
+                    },
+                    "healthStyle": {
+                        "type": "string",
+                        "example": "[\"organic\", \"vegetarian\"]"
+                    },
+                    "ableToShareMedicalRecord": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "facebookLink": {
+                        "type": "string",
+                        "example": "https://facebook.com/username"
+                    },
+                    "instagramLink": {
+                        "type": "string",
+                        "example": "https://instagram.com/username"
+                    }
+                },
+                "required": [
+                    "name",
+                    "phone",
+                    "zipcode",
+                    "userType"
+                ]
+            },
+            "UpdateFcmTokenDto": {
+                "type": "object",
+                "properties": {
+                    "fcmToken": {
+                        "type": "string",
+                        "example": "fcm_token_here"
+                    }
+                },
+                "required": [
+                    "fcmToken"
+                ]
+            },
+            "DisableUserDto": {
+                "type": "object",
+                "properties": {
+                    "isActive": {
+                        "type": "boolean",
+                        "example": false
+                    }
+                },
+                "required": [
+                    "isActive"
+                ]
+            },
+            "CreateUserDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "user@example.com"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "example": "+1234567890"
+                    },
+                    "zipcode": {
+                        "type": "string",
+                        "example": "12345"
+                    },
+                    "userType": {
+                        "type": "string",
+                        "enum": [
+                            "DONOR",
+                            "BUYER",
+                            "ADMIN"
+                        ],
+                        "example": "DONOR"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Healthy mother willing to donate"
+                    },
+                    "bloodGroup": {
+                        "type": "string",
+                        "example": "O+"
+                    },
+                    "babyDeliveryDate": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "healthStyle": {
+                        "type": "string"
+                    },
+                    "ableToShareMedicalRecord": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "name",
+                    "email",
+                    "phone",
+                    "zipcode",
+                    "userType"
+                ]
+            },
+            "UpdateUserDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "zipcode": {
+                        "type": "string"
+                    },
+                    "userType": {
+                        "type": "string",
+                        "enum": [
+                            "DONOR",
+                            "BUYER",
+                            "ADMIN"
+                        ]
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "bloodGroup": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CreateBabyDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Emma Johnson"
+                    },
+                    "gender": {
+                        "type": "string",
+                        "enum": [
+                            "BOY",
+                            "GIRL",
+                            "OTHER"
+                        ],
+                        "example": "GIRL"
+                    },
+                    "deliveryDate": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T00:00:00.000Z"
+                    },
+                    "bloodGroup": {
+                        "type": "string",
+                        "example": "O+"
+                    },
+                    "weight": {
+                        "type": "number",
+                        "example": 3.2
+                    },
+                    "height": {
+                        "type": "number",
+                        "example": 50.5
+                    },
+                    "userId": {
+                        "type": "integer",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "name",
+                    "gender",
+                    "deliveryDate",
+                    "userId"
+                ]
+            },
+            "UpdateBabyDto": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "gender": {
+                        "type": "string",
+                        "enum": [
+                            "BOY",
+                            "GIRL",
+                            "OTHER"
+                        ]
+                    },
+                    "deliveryDate": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "bloodGroup": {
+                        "type": "string"
+                    },
+                    "weight": {
+                        "type": "number"
+                    },
+                    "height": {
+                        "type": "number"
+                    }
+                }
+            },
+            "BabyAnalyticsRequestDto": {
+                "type": "object",
+                "properties": {
+                    "babyId": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "startDate": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-01T00:00:00Z"
+                    },
+                    "endDate": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2023-10-31T23:59:59Z"
+                    }
+                },
+                "required": [
+                    "babyId",
+                    "startDate",
+                    "endDate"
+                ]
+            },
+            "CreateFeedLogDto": {
+                "type": "object",
+                "properties": {
+                    "feedingDate": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T00:00:00.000Z"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T09:00:00.000Z"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T09:30:00.000Z"
+                    },
+                    "feedType": {
+                        "type": "string",
+                        "enum": [
+                            "BREAST",
+                            "BOTTLE",
+                            "OTHER"
+                        ],
+                        "example": "BREAST"
+                    },
+                    "position": {
+                        "type": "string",
+                        "enum": [
+                            "LEFT",
+                            "RIGHT",
+                            "BOTH"
+                        ]
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 120.5
+                    },
+                    "note": {
+                        "type": "string"
+                    },
+                    "babyId": {
+                        "type": "integer",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "feedingDate",
+                    "startTime",
+                    "endTime",
+                    "feedType",
+                    "babyId"
+                ]
+            },
+            "UpdateFeedLogDto": {
+                "type": "object",
+                "properties": {
+                    "feedingDate": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "feedType": {
+                        "type": "string",
+                        "enum": [
+                            "BREAST",
+                            "BOTTLE",
+                            "OTHER"
+                        ]
+                    },
+                    "position": {
+                        "type": "string",
+                        "enum": [
+                            "LEFT",
+                            "RIGHT",
+                            "BOTH"
+                        ]
+                    },
+                    "amount": {
+                        "type": "number"
+                    },
+                    "note": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CreateDiaperLogDto": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T00:00:00.000Z"
+                    },
+                    "time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T10:30:00.000Z"
+                    },
+                    "diaperType": {
+                        "type": "string",
+                        "enum": [
+                            "SOLID",
+                            "LIQUID",
+                            "BOTH",
+                            "EMPTY"
+                        ],
+                        "example": "EMPTY"
+                    },
+                    "note": {
+                        "type": "string"
+                    },
+                    "babyId": {
+                        "type": "integer",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "date",
+                    "time",
+                    "diaperType",
+                    "babyId"
+                ]
+            },
+            "UpdateDiaperLogDto": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "time": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "diaperType": {
+                        "type": "string",
+                        "enum": [
+                            "SOLID",
+                            "LIQUID",
+                            "BOTH",
+                            "EMPTY"
+                        ]
+                    },
+                    "note": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CreateSleepLogDto": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T00:00:00.000Z"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-15T20:00:00.000Z"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "sleepQuality": {
+                        "type": "string"
+                    },
+                    "location": {
+                        "type": "string",
+                        "enum": [
+                            "CRIB",
+                            "BED",
+                            "STROLLER",
+                            "OTHER"
+                        ],
+                        "example": "CRIB"
+                    },
+                    "note": {
+                        "type": "string"
+                    },
+                    "babyId": {
+                        "type": "integer",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "date",
+                    "startTime",
+                    "location",
+                    "babyId"
+                ]
+            },
+            "UpdateSleepLogDto": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "sleepQuality": {
+                        "type": "string"
+                    },
+                    "location": {
+                        "type": "string",
+                        "enum": [
+                            "CRIB",
+                            "BED",
+                            "STROLLER",
+                            "OTHER"
+                        ]
+                    },
+                    "note": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CreateMilkRequestDto": {
+                "type": "object",
+                "properties": {
+                    "requestType": {
+                        "type": "string",
+                        "enum": [
+                            "MILK_REQUEST",
+                            "MILK_OFFER"
+                        ],
+                        "example": "MILK_REQUEST"
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Need breast milk for newborn"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Urgent need for my 2-week old baby"
+                    },
+                    "quantity": {
+                        "type": "number",
+                        "example": 150.5
+                    },
+                    "urgency": {
+                        "type": "string",
+                        "enum": [
+                            "LOW",
+                            "MEDIUM",
+                            "HIGH"
+                        ],
+                        "example": "HIGH"
+                    },
+                    "neededBy": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-20T10:00:00.000Z"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "example": "Willing to travel up to 10km"
+                    }
+                },
+                "required": [
+                    "requestType",
+                    "title"
+                ]
+            },
+            "UpdateMilkRequestDto": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "PENDING",
+                            "ACCEPTED",
+                            "DECLINED",
+                            "COMPLETED",
+                            "CANCELLED"
+                        ]
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "quantity": {
+                        "type": "number"
+                    },
+                    "urgency": {
+                        "type": "string",
+                        "enum": [
+                            "LOW",
+                            "MEDIUM",
+                            "HIGH"
+                        ]
+                    },
+                    "neededBy": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "notes": {
+                        "type": "string"
+                    }
+                }
+            },
+            "AcceptRequestDto": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "I can help with this request"
+                    }
+                }
+            },
+            "UpdateAvailabilityDto": {
+                "type": "object",
+                "properties": {
+                    "isAvailable": {
+                        "type": "boolean",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "isAvailable"
+                ]
+            },
+            "SendRequestToSpecificDonorDto": {
+                "type": "object",
+                "properties": {
+                    "donorId": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Urgent milk request for newborn"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "My newborn needs breast milk urgently"
+                    },
+                    "quantity": {
+                        "type": "number",
+                        "example": 500
+                    },
+                    "urgency": {
+                        "type": "string",
+                        "enum": [
+                            "LOW",
+                            "MEDIUM",
+                            "HIGH"
+                        ],
+                        "example": "HIGH"
+                    },
+                    "neededBy": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "notes": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "donorId",
+                    "title",
+                    "quantity",
+                    "urgency"
+                ]
+            },
+            "CreateDonationDto": {
+                "type": "object",
+                "properties": {
+                    "amount": {
+                        "type": "number",
+                        "example": 25.0
+                    },
+                    "currency": {
+                        "type": "string",
+                        "example": "usd"
+                    },
+                    "stripePaymentMethodId": {
+                        "type": "string",
+                        "example": "pm_1PABCDE..."
+                    },
+                    "donorEmail": {
+                        "type": "string",
+                        "example": "donor@example.com"
+                    },
+                    "donorName": {
+                        "type": "string",
+                        "example": "John Doe"
+                    }
+                },
+                "required": [
+                    "amount",
+                    "currency",
+                    "stripePaymentMethodId"
+                ]
+            },
+            "CreateCheckoutSessionDto": {
+                "type": "object",
+                "properties": {
+                    "amount": {
+                        "type": "number",
+                        "example": 25.0
+                    },
+                    "currency": {
+                        "type": "string",
+                        "example": "usd"
+                    },
+                    "donorEmail": {
+                        "type": "string"
+                    },
+                    "donorName": {
+                        "type": "string"
+                    },
+                    "successUrl": {
+                        "type": "string"
+                    },
+                    "cancelUrl": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "amount",
+                    "currency"
+                ]
+            },
+            "UpdateDonationDto": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "PENDING",
+                            "COMPLETED",
+                            "FAILED"
+                        ]
+                    }
+                },
+                "required": [
+                    "status"
+                ]
+            },
+            "SendMessageDto": {
+                "type": "object",
+                "properties": {
+                    "recipientId": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "content": {
+                        "type": "string",
+                        "example": "Hello, I am interested in your milk offer"
+                    }
+                },
+                "required": [
+                    "recipientId",
+                    "content"
+                ]
+            },
+            "MarkMessagesReadDto": {
+                "type": "object",
+                "properties": {
+                    "messageIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2,
+                            3
+                        ]
+                    }
+                },
+                "required": [
+                    "messageIds"
+                ]
+            },
+            "CreateContactFormDto": {
+                "type": "object",
+                "properties": {
+                    "Name": {
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "email": {
+                        "type": "string",
+                        "example": "contact@example.com"
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "I have a question about the service"
+                    }
+                },
+                "required": [
+                    "Name",
+                    "email",
+                    "message"
+                ]
+            }
+        }
+    },
+    "paths": {
+        "/auth/send-otp": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Send OTP to email",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SendOtpDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OTP sent successfully"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                }
+            }
+        },
+        "/auth/verify-otp": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Verify OTP",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyOtpDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OTP verified successfully"
+                    },
+                    "401": {
+                        "description": "Invalid or expired OTP"
+                    }
+                }
+            }
+        },
+        "/auth/complete-profile": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Complete Profile",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CompleteProfileDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Profile completed successfully"
+                    },
+                    "409": {
+                        "description": "User already exists"
+                    }
+                }
+            }
+        },
+        "/auth/profile": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get Profile",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User profile retrieved successfully"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Update Profile",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CompleteProfileDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Profile updated successfully"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/auth/fcm-token": {
+            "patch": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Update FCM Token",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateFcmTokenDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "FCM token updated successfully"
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Refresh Token",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed successfully"
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get All Users",
+                "responses": {
+                    "200": {
+                        "description": "List of all users"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create User",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateUserDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User created successfully"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                }
+            }
+        },
+        "/users/donors": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get All Donors",
+                "responses": {
+                    "200": {
+                        "description": "List of all donors"
+                    }
+                }
+            }
+        },
+        "/users/buyers": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get All Buyers",
+                "responses": {
+                    "200": {
+                        "description": "List of all buyers"
+                    }
+                }
+            }
+        },
+        "/users/admins": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get All Admins",
+                "responses": {
+                    "200": {
+                        "description": "List of all admins"
+                    }
+                }
+            }
+        },
+        "/users/donors/zipcode/{zipcode}": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get Donors by Zipcode",
+                "parameters": [
+                    {
+                        "name": "zipcode",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "12345"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of donors in zipcode"
+                    }
+                }
+            }
+        },
+        "/users/email/{email}": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get User by Email",
+                "parameters": [
+                    {
+                        "name": "email",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "user@example.com"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User found"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get User by ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 1
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User found"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update User",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateUserDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated successfully"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete User",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User deleted successfully"
+                    }
+                }
+            }
+        },
+        "/babies": {
+            "get": {
+                "tags": [
+                    "babies"
+                ],
+                "summary": "Get All Babies",
+                "responses": {
+                    "200": {
+                        "description": "List of all baby profiles"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "babies"
+                ],
+                "summary": "Create Baby",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateBabyDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Baby created successfully"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    }
+                }
+            }
+        },
+        "/babies/user/{userId}": {
+            "get": {
+                "tags": [
+                    "babies"
+                ],
+                "summary": "Get Babies by User ID",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "userId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of baby profiles for user"
+                    }
+                }
+            }
+        },
+        "/babies/gender/{gender}": {
+            "get": {
+                "tags": [
+                    "babies"
+                ],
+                "summary": "Get Babies by Gender",
+                "parameters": [
+                    {
+                        "name": "gender",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "BOY",
+                                "GIRL",
+                                "OTHER"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of babies by gender"
+                    }
+                }
+            }
+        },
+        "/babies/age-range": {
+            "get": {
+                "tags": [
+                    "babies"
+                ],
+                "summary": "Get Babies by Age Range",
+                "parameters": [
+                    {
+                        "name": "minMonths",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 0
+                    },
+                    {
+                        "name": "maxMonths",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 12
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of babies in age range"
+                    }
+                }
+            }
+        },
+        "/babies/{id}": {
+            "get": {
+                "tags": [
+                    "babies"
+                ],
+                "summary": "Get Baby by ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Baby found"
+                    },
+                    "404": {
+                        "description": "Baby not found"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "babies"
+                ],
+                "summary": "Update Baby",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateBabyDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Baby updated successfully"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "babies"
+                ],
+                "summary": "Delete Baby",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Baby deleted successfully"
+                    }
+                }
+            }
+        },
+        "/babies/analytics": {
+            "post": {
+                "tags": [
+                    "babies"
+                ],
+                "summary": "Get Baby Analytics",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BabyAnalyticsRequestDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Analytics retrieved successfully"
+                    }
+                }
+            }
+        },
+        "/feed-logs": {
+            "get": {
+                "tags": [
+                    "feed-logs"
+                ],
+                "summary": "Get All Feed Logs",
+                "responses": {
+                    "200": {
+                        "description": "List of feed logs"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "feed-logs"
+                ],
+                "summary": "Create Feed Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateFeedLogDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Feed log created successfully"
+                    }
+                }
+            }
+        },
+        "/feed-logs/baby/{babyId}": {
+            "get": {
+                "tags": [
+                    "feed-logs"
+                ],
+                "summary": "Get Feed Logs by Baby ID",
+                "parameters": [
+                    {
+                        "name": "babyId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Feed logs for baby"
+                    }
+                }
+            }
+        },
+        "/feed-logs/baby/{babyId}/date-range": {
+            "get": {
+                "tags": [
+                    "feed-logs"
+                ],
+                "summary": "Get Feed Logs by Date Range",
+                "parameters": [
+                    {
+                        "name": "babyId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2024-01-01"
+                    },
+                    {
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2024-01-31"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Feed logs in date range"
+                    }
+                }
+            }
+        },
+        "/feed-logs/{id}": {
+            "get": {
+                "tags": [
+                    "feed-logs"
+                ],
+                "summary": "Get Feed Log by ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Feed log found"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "feed-logs"
+                ],
+                "summary": "Update Feed Log",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateFeedLogDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Feed log updated"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "feed-logs"
+                ],
+                "summary": "Delete Feed Log",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Feed log deleted"
+                    }
+                }
+            }
+        },
+        "/diaper-logs": {
+            "get": {
+                "tags": [
+                    "diaper-logs"
+                ],
+                "summary": "Get All Diaper Logs",
+                "responses": {
+                    "200": {
+                        "description": "List of diaper logs"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "diaper-logs"
+                ],
+                "summary": "Create Diaper Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateDiaperLogDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Diaper log created successfully"
+                    }
+                }
+            }
+        },
+        "/diaper-logs/baby/{babyId}": {
+            "get": {
+                "tags": [
+                    "diaper-logs"
+                ],
+                "summary": "Get Diaper Logs by Baby ID",
+                "parameters": [
+                    {
+                        "name": "babyId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Diaper logs for baby"
+                    }
+                }
+            }
+        },
+        "/diaper-logs/baby/{babyId}/date-range": {
+            "get": {
+                "tags": [
+                    "diaper-logs"
+                ],
+                "summary": "Get Diaper Logs by Date Range",
+                "parameters": [
+                    {
+                        "name": "babyId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2024-01-01"
+                    },
+                    {
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2024-01-31"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Diaper logs in date range"
+                    }
+                }
+            }
+        },
+        "/diaper-logs/{id}": {
+            "get": {
+                "tags": [
+                    "diaper-logs"
+                ],
+                "summary": "Get Diaper Log by ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Diaper log found"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "diaper-logs"
+                ],
+                "summary": "Update Diaper Log",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateDiaperLogDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Diaper log updated"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "diaper-logs"
+                ],
+                "summary": "Delete Diaper Log",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Diaper log deleted"
+                    }
+                }
+            }
+        },
+        "/sleep-logs": {
+            "get": {
+                "tags": [
+                    "sleep-logs"
+                ],
+                "summary": "Get All Sleep Logs",
+                "responses": {
+                    "200": {
+                        "description": "List of sleep logs"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "sleep-logs"
+                ],
+                "summary": "Create Sleep Log",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateSleepLogDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Sleep log created successfully"
+                    }
+                }
+            }
+        },
+        "/sleep-logs/baby/{babyId}": {
+            "get": {
+                "tags": [
+                    "sleep-logs"
+                ],
+                "summary": "Get Sleep Logs by Baby ID",
+                "parameters": [
+                    {
+                        "name": "babyId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sleep logs for baby"
+                    }
+                }
+            }
+        },
+        "/sleep-logs/baby/{babyId}/date-range": {
+            "get": {
+                "tags": [
+                    "sleep-logs"
+                ],
+                "summary": "Get Sleep Logs by Date Range",
+                "parameters": [
+                    {
+                        "name": "babyId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "startDate",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2024-01-01"
+                    },
+                    {
+                        "name": "endDate",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2024-01-31"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sleep logs in date range"
+                    }
+                }
+            }
+        },
+        "/sleep-logs/{id}": {
+            "get": {
+                "tags": [
+                    "sleep-logs"
+                ],
+                "summary": "Get Sleep Log by ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sleep log found"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "sleep-logs"
+                ],
+                "summary": "Update Sleep Log",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateSleepLogDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sleep log updated"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "sleep-logs"
+                ],
+                "summary": "Delete Sleep Log",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sleep log deleted"
+                    }
+                }
+            }
+        },
+        "/requests": {
+            "post": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Create Request",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateMilkRequestDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Request created successfully"
+                    }
+                }
+            }
+        },
+        "/requests/my-requests": {
+            "get": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Get My Requests",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 1
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 10
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "PENDING",
+                                "ACCEPTED",
+                                "DECLINED",
+                                "COMPLETED",
+                                "CANCELLED"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "requestType",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "MILK_REQUEST",
+                                "MILK_OFFER"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "urgency",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "LOW",
+                                "MEDIUM",
+                                "HIGH"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User requests retrieved"
+                    }
+                }
+            }
+        },
+        "/requests/incoming": {
+            "get": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Get Incoming Requests (Donor)",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "urgency",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "LOW",
+                                "MEDIUM",
+                                "HIGH"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Incoming requests retrieved"
+                    }
+                }
+            }
+        },
+        "/requests/admin/all": {
+            "get": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Admin - Get All Requests",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "buyerName",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "donorName",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "All requests retrieved"
+                    }
+                }
+            }
+        },
+        "/requests/availability": {
+            "patch": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Update Availability",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateAvailabilityDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Availability updated"
+                    }
+                }
+            }
+        },
+        "/requests/{id}": {
+            "get": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Get Request Details",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Request details"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Update Request",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateMilkRequestDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Request updated"
+                    }
+                }
+            }
+        },
+        "/requests/{id}/accept": {
+            "post": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Accept Request",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AcceptRequestDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Request accepted"
+                    }
+                }
+            }
+        },
+        "/requests/{id}/reject": {
+            "post": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Reject Request",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AcceptRequestDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Request rejected"
+                    }
+                }
+            }
+        },
+        "/requests/search/donors": {
+            "get": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Search Donors",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "maxDistance",
+                        "in": "query",
+                        "schema": {
+                            "type": "number"
+                        },
+                        "example": 10
+                    },
+                    {
+                        "name": "ableToShareMedicalRecord",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "isAvailable",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "bloodGroup",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "zipcode",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "donorName",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Donors found"
+                    }
+                }
+            }
+        },
+        "/requests/notifications": {
+            "get": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Get Notifications",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notifications retrieved"
+                    }
+                }
+            }
+        },
+        "/requests/notifications/{notificationId}/read": {
+            "patch": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Mark Notification as Read",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "notificationId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notification marked as read"
+                    }
+                }
+            }
+        },
+        "/requests/send-to-donor": {
+            "post": {
+                "tags": [
+                    "Milk Requests"
+                ],
+                "summary": "Send Request to Specific Donor",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SendRequestToSpecificDonorDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Request sent"
+                    }
+                }
+            }
+        },
+        "/donations": {
+            "get": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Get All Donations",
+                "responses": {
+                    "200": {
+                        "description": "List of donations"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Create Donation",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateDonationDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Donation created"
+                    }
+                }
+            }
+        },
+        "/donations/checkout": {
+            "post": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Create Checkout Session",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateCheckoutSessionDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Checkout session created"
+                    }
+                }
+            }
+        },
+        "/donations/{id}": {
+            "get": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Get Donation by ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Donation found"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Update Donation",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateDonationDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Donation updated"
+                    }
+                }
+            }
+        },
+        "/chat/sessions": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get Chat Sessions",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 1
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "example": 20
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Chat sessions retrieved"
+                    }
+                }
+            }
+        },
+        "/chat/sessions/{sessionId}/messages": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get Session Messages",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Messages retrieved"
+                    }
+                }
+            }
+        },
+        "/chat/messages": {
+            "post": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Send Message",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SendMessageDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Message sent"
+                    }
+                }
+            }
+        },
+        "/chat/messages/read": {
+            "post": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Mark Messages as Read",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MarkMessagesReadDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Messages marked as read"
+                    }
+                }
+            }
+        },
+        "/chat/unread-count": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get Unread Count",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Unread count retrieved"
+                    }
+                }
+            }
+        },
+        "/chat/session/{otherUserId}": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get or Create Chat Session",
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "otherUserId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Chat session retrieved/created"
+                    }
+                }
+            }
+        },
+        "/analytics/baby/{babyId}/feed": {
+            "get": {
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get Feed Analytics",
+                "parameters": [
+                    {
+                        "name": "babyId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "startDate",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2024-01-01"
+                    },
+                    {
+                        "name": "endDate",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "2024-01-31"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Feed analytics retrieved"
+                    }
+                }
+            }
+        },
+        "/analytics/baby/{babyId}/diaper": {
+            "get": {
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get Diaper Analytics",
+                "parameters": [
+                    {
+                        "name": "babyId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "startDate",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "endDate",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Diaper analytics retrieved"
+                    }
+                }
+            }
+        },
+        "/analytics/baby/{babyId}/sleep": {
+            "get": {
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get Sleep Analytics",
+                "parameters": [
+                    {
+                        "name": "babyId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "startDate",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "endDate",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sleep analytics retrieved"
+                    }
+                }
+            }
+        },
+        "/analytics/baby/{babyId}/combined": {
+            "get": {
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get Combined Analytics",
+                "parameters": [
+                    {
+                        "name": "babyId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "startDate",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "endDate",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Combined analytics retrieved"
+                    }
+                }
+            }
+        },
+        "/contact-form": {
+            "post": {
+                "tags": [
+                    "Contact Form"
+                ],
+                "summary": "Submit Contact Form",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateContactFormDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Contact form submitted"
+                    }
+                }
+            }
+        }
+    }
+}

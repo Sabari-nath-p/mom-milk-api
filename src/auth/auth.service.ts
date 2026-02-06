@@ -154,11 +154,21 @@ export class AuthService {
 
         // Fetch coordinates for the zipcode (this will auto-save to DB if needed)
         // If it fails or returns null, we can proceed but location features might be limited
+        let coordinates = null;
         try {
-            await this.geolocationService.getZipCodeCoordinates(completeProfileDto.zipcode);
+            coordinates = await this.geolocationService.getZipCodeCoordinates(completeProfileDto.zipcode);
         } catch (geoError) {
             console.warn(`Failed to fetch coordinates for zipcode ${completeProfileDto.zipcode}:`, geoError);
             // Continue with profile creation even if geolocation fails
+        }
+
+        // If coordinates not found (neither in DB nor Google API), report it
+        if (!coordinates) {
+            console.log(`Zipcode ${completeProfileDto.zipcode} not found. Sending report to admin.`);
+            // Don't await this to avoid blocking the user response
+            this.mailService.sendZipcodeNotFoundEmail(completeProfileDto.zipcode, "sabarinath5604@gmail.com").catch(err => 
+                console.error('Failed to send missing zipcode report:', err)
+            );
         }
 
         // Create new user
