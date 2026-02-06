@@ -667,7 +667,7 @@ export class GeolocationService {
         // 1. Get all distinct zipcodes from users
         const users = await this.prisma.user.findMany({
             select: { zipcode: true },
-            where: { zipcode: { not: null } } // Only users with zipcodes
+             // Zipcode is required in schema, so no need to check for null, JS filter below handles empty strings
         });
 
         // Filter valid-looking zipcodes (at least 3 chars)
