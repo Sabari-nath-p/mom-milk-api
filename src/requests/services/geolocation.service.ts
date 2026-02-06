@@ -651,6 +651,67 @@ export class GeolocationService {
             lastImported: lastRecord?.createdAt,
         };
     }
+
+    /**
+     * Sync zipcodes from User table to ZipCode table
+     * Scanning all users and ensuring their zipcodes exist in the DB
+     */
+    async syncUserZipCodes(): Promise<{
+        totalUsersChecked: number;
+        uniqueUserZipcodes: number;
+        missingInDb: number;
+        successfullySynced: number;
+        failedToSync: number;
+        failedZipcodes: string[];
+    }> {
+        // 1. Get all distinct zipcodes from users
+        const users = await this.prisma.user.findMany({
+            select: { zipcode: true },
+            where: { zipcode: { not: null } } // Only users with zipcodes
+        });
+
+        // Filter valid-looking zipcodes (at least 3 chars)
+        const userZipcodes = [...new Set(users.map(u => u.zipcode).filter(z => z && z.length > 3))];
+        
+        console.log(`Found ${userZipcodes.length} distinct zipcodes from ${users.length} users`);
+
+        const stats = {
+            totalUsersChecked: users.length,
+            uniqueUserZipcodes: userZipcodes.length,
+            missingInDb: 0,
+            successfullySynced: 0,
+            failedToSync: 0,
+            failedZipcodes: []
+        };
+
+        // 2. Check which ones are missing in ZipCode table
+        for (const zipcode of userZipcodes) {
+            const exists = await this.prisma.zipCode.findUnique({
+                where: { zipcode }
+            });
+
+            if (!exists) {
+                stats.missingInDb++;
+                
+                // 3. Try to fetch from Google
+                try {
+                    const result = await this.fetchFromGoogleGeocoding(zipcode);
+                    if (result) {
+                        stats.successfullySynced++;
+                    } else {
+                        stats.failedToSync++;
+                        stats.failedZipcodes.push(zipcode);
+                    }
+                } catch (error) {
+                    console.error(`Error syncing zipcode ${zipcode}:`, error);
+                    stats.failedToSync++;
+                    stats.failedZipcodes.push(zipcode);
+                }
+            }
+        }
+
+        return stats;
+    }
 }
 
 function formattedAddressToPlaceName(formattedAddress: string): string {

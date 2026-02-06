@@ -144,6 +144,15 @@ async importZipCodes() {
   return this.geolocationService.importZipCodesFromFile(filePath, true); // true = clear existing data
 }
 
+@UseGuards(JwtAuthGuard, AdminGuard)
+@ApiBearerAuth()
+@Post('zipcodes/sync')
+@ApiOperation({ summary: 'Sync zipcodes from User table to ZipCode table (Admin only)' })
+@ApiResponse({ status: 200, description: 'Sync completed', schema: { example: { totalUsersChecked: 100, uniqueUserZipcodes: 5, missingInDb: 2, successfullySynced: 1, failedToSync: 1, failedZipcodes: ['999999'] } } })
+async syncUserZipCodes() {
+    return this.geolocationService.syncUserZipCodes();
+}
+
 
     @Get('distance/:zipcode1/:zipcode2')
     @ApiOperation({ summary: 'Calculate distance between two zipcodes' })
