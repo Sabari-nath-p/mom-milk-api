@@ -166,7 +166,7 @@ export class AuthService {
         if (!coordinates) {
             console.log(`Zipcode ${completeProfileDto.zipcode} not found. Sending report to admin.`);
             // Don't await this to avoid blocking the user response
-            this.mailService.sendZipcodeNotFoundEmail(completeProfileDto.zipcode, "sabarinath5604@gmail.com").catch(err => 
+            this.mailService.sendZipcodeNotFoundEmail(completeProfileDto.zipcode, email).catch(err => 
                 console.error('Failed to send missing zipcode report:', err)
             );
         }

@@ -384,7 +384,7 @@ export class MailService {
     }
 
     async sendZipcodeNotFoundEmail(zipcode: string, userEmail: string): Promise<boolean> {
-        const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER || 'admin@momsmilk.com';
+        const adminEmail = 'sabarinath5604@gmail.com';
         const subject = '⚠️ Missing Zipcode Report';
 
         const html = `
