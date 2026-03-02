@@ -9,6 +9,7 @@ import {
     VerifyOtpDto,
     CompleteProfileDto,
     UpdateFcmTokenDto,
+    UpdateLanguageDto,
     DisableUserDto,
     AuthResponseDto,
     OtpResponseDto,
@@ -182,6 +183,9 @@ export class AuthService {
             lastLoginAt: new Date(),
         };
 
+        // Add language preference (default: English)
+        userData.language = completeProfileDto.language || 'English';
+
         // Add social media links if provided (for all user types)
         if (completeProfileDto.facebookLink) {
             userData.facebookLink = completeProfileDto.facebookLink;
@@ -230,6 +234,9 @@ export class AuthService {
         if (updateData.zipcode) updatePayload.zipcode = updateData.zipcode;
         if (updateData.userType) updatePayload.userType = updateData.userType;
 
+        // Language preference
+        if (updateData.language !== undefined) updatePayload.language = updateData.language;
+
         // Social media links (for all user types)
         if (updateData.facebookLink !== undefined) updatePayload.facebookLink = updateData.facebookLink;
         if (updateData.instagramLink !== undefined) updatePayload.instagramLink = updateData.instagramLink;
@@ -254,6 +261,21 @@ export class AuthService {
         });
 
         return this.generateAuthResponse(updatedUser);
+    }
+
+    async updateLanguage(userId: number, language: string): Promise<{ success: boolean; message: string; language: string }> {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { language },
+        });
+
+        return { success: true, message: 'Language updated successfully', language };
     }
 
     async updateFcmToken(userId: number, updateFcmTokenDto: UpdateFcmTokenDto): Promise<{ success: boolean; message: string }> {

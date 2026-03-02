@@ -62,6 +62,11 @@ export class CompleteProfileDto {
     @IsBoolean()
     ableToShareMedicalRecord?: boolean;
 
+    @ApiPropertyOptional({ example: 'English', description: 'Preferred language (default: English)' })
+    @IsOptional()
+    @IsString()
+    language?: string;
+
     // Social media links (optional for all users)
     @ApiPropertyOptional({ example: 'https://facebook.com/username', description: 'Facebook profile link' })
     @IsOptional()
@@ -72,6 +77,12 @@ export class CompleteProfileDto {
     @IsOptional()
     @IsString()
     instagramLink?: string;
+}
+
+export class UpdateLanguageDto {
+    @ApiProperty({ example: 'Spanish', description: 'Preferred language' })
+    @IsString()
+    language: string;
 }
 
 export class UpdateFcmTokenDto {

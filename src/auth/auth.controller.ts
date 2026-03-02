@@ -24,6 +24,7 @@ import {
     VerifyOtpDto,
     CompleteProfileDto,
     UpdateFcmTokenDto,
+    UpdateLanguageDto,
     DisableUserDto,
     AuthResponseDto,
     OtpResponseDto,
@@ -84,6 +85,20 @@ export class AuthController {
         @Body() updateData: Partial<CompleteProfileDto>
     ): Promise<AuthResponseDto> {
         return this.authService.updateProfile(req.user.id, updateData);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @Patch('language')
+    @ApiOperation({ summary: 'Update preferred language' })
+    @ApiResponse({ status: 200, description: 'Language updated successfully' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 404, description: 'User not found' })
+    async updateLanguage(
+        @Request() req,
+        @Body() updateLanguageDto: UpdateLanguageDto
+    ): Promise<{ success: boolean; message: string; language: string }> {
+        return this.authService.updateLanguage(req.user.id, updateLanguageDto.language);
     }
 
     @UseGuards(JwtAuthGuard)
