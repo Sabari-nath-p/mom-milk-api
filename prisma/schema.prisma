@@ -92,9 +92,6 @@ model User {
   isAvailable                    Boolean?  @default(true) // For donors - availability status
   lastAvailabilityNotificationAt DateTime? // Track last time availability notification was sent
 
-  // Language preference
-  language      String?   @default("English")
-
   // Social media links (optional for all users)
   facebookLink  String?
   instagramLink String?
