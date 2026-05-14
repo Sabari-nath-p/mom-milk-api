@@ -20,6 +20,8 @@ import { PugAdapter } from "@nestjs-modules/mailer/dist/adapters/pug.adapter";
 import { join } from "path";
 import { DonationsModule } from "./donations/donations.module";
 import { StripeRawBodyMiddleware } from "./donations/stripe-raw.middleware";
+import { EcomModule } from "./ecom/ecom.module";
+import { MarketplaceModule } from "./marketplace/marketplace.module";
 
 @Module({
   imports: [
@@ -61,6 +63,8 @@ import { StripeRawBodyMiddleware } from "./donations/stripe-raw.middleware";
       },
     }),
     DonationsModule,
+    EcomModule,
+    MarketplaceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -69,6 +69,49 @@ enum DonationStatus {
   REFUNDED
 }
 
+// ─── E-Commerce Enums ─────────────────────────────────────────────────────────
+
+enum EcomOrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+// ─── Marketplace Enums ────────────────────────────────────────────────────────
+
+enum MarketplaceListingStatus {
+  ACTIVE
+  SOLD
+  EXPIRED
+  REMOVED
+}
+
+enum MarketplaceCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum MarketplaceCategory {
+  CRADLES
+  TOYS
+  CLOTHING
+  STROLLERS
+  CAR_SEATS
+  FEEDING
+  BATH
+  SAFETY
+  BOOKS
+  EDUCATIONAL
+  OTHER
+}
+
 model User {
   id       Int      @id @default(autoincrement())
   name     String
@@ -107,6 +150,17 @@ model User {
   sentRequests     MilkRequest[]         @relation("RequesterUser")
   receivedRequests MilkRequest[]         @relation("DonorUser")
   notifications    RequestNotification[]
+
+  // E-Commerce & Vendor relationships
+  vendorProfile         Vendor?
+  ecomCart              EcomCart?
+  ecomOrders            EcomOrder[]
+  ecomReviews           EcomReview[]
+  ecomReviewReplies     EcomReviewReply[]
+
+  // Marketplace relationships
+  marketplaceListings   MarketplaceListing[]
+  savedListings         MarketplaceSavedListing[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -369,3 +423,327 @@ model Donation {
 
   @@map("donations")
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// E-COMMERCE MODELS
+// ═════════════════════════════════════════════════════════════════════════════
+
+/// Vendor / Seller profile — any User (BUYER or DONOR) can become a vendor
+model Vendor {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  storeName   String
+  description String?  @db.Text
+  logoUrl     String?
+  zipcode     String
+  address     String?
+
+  isVerified  Boolean  @default(false)
+  isActive    Boolean  @default(true)
+
+  products    EcomProduct[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([zipcode])
+  @@map("vendors")
+}
+
+/// Product category (admin-managed, flat list for simplicity)
+model EcomCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  products    EcomProduct[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("ecom_categories")
+}
+
+/// Base product — supports variant-less (hasVariants=false) and multi-variant products
+model EcomProduct {
+  id            Int          @id @default(autoincrement())
+  vendorId      Int
+  vendor        Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  categoryId    Int?
+  category      EcomCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  name          String
+  description   String?      @db.Text
+  basePrice     Float
+  stock         Int          @default(0)   // used when hasVariants = false
+  hasVariants   Boolean      @default(false)
+  isActive      Boolean      @default(true)
+  zipcode       String       // seller location for geo-based filtering
+  tags          String?      // JSON array of strings e.g. '["baby","organic"]'
+
+  averageRating Float?       @default(0)
+  totalReviews  Int          @default(0)
+
+  variants      EcomProductVariant[]
+  images        EcomProductImage[]
+  reviews       EcomReview[]
+  orderItems    EcomOrderItem[]
+  cartItems     EcomCartItem[]
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([vendorId])
+  @@index([categoryId])
+  @@index([zipcode])
+  @@index([isActive])
+  @@map("ecom_products")
+}
+
+/// A variant of a product (e.g., "Red - Large", "Blue - Medium")
+model EcomProductVariant {
+  id         Int         @id @default(autoincrement())
+  productId  Int
+  product    EcomProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  name       String      // e.g. "Red - Large"
+  sku        String?
+  price      Float       // override base price
+  stock      Int         @default(0)
+  attributes String?     // JSON: {"color":"Red","size":"L"}
+  isActive   Boolean     @default(true)
+
+  cartItems  EcomCartItem[]
+  orderItems EcomOrderItem[]
+
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([productId])
+  @@map("ecom_product_variants")
+}
+
+/// Product images
+model EcomProductImage {
+  id        Int         @id @default(autoincrement())
+  productId Int
+  product   EcomProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  url       String
+  altText   String?
+  isPrimary Boolean     @default(false)
+  sortOrder Int         @default(0)
+
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([productId])
+  @@map("ecom_product_images")
+}
+
+/// Shopping cart — one per user
+model EcomCart {
+  id        Int           @id @default(autoincrement())
+  userId    Int           @unique
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     EcomCartItem[]
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@map("ecom_carts")
+}
+
+/// Items inside a cart
+model EcomCartItem {
+  id        Int                 @id @default(autoincrement())
+  cartId    Int
+  cart      EcomCart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  productId Int
+  product   EcomProduct         @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  variantId Int?
+  variant   EcomProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  quantity  Int                 @default(1)
+
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@unique([cartId, productId, variantId])
+  @@index([cartId])
+  @@map("ecom_cart_items")
+}
+
+/// An order placed by a user
+model EcomOrder {
+  id            Int             @id @default(autoincrement())
+  userId        Int
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status        EcomOrderStatus @default(PENDING)
+  totalAmount   Float
+  notes         String?
+
+  // Shipping address snapshot at time of order
+  shippingName    String?
+  shippingPhone   String?
+  shippingAddress String?
+  shippingZipcode String?
+
+  items         EcomOrderItem[]
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("ecom_orders")
+}
+
+/// Line items in an order
+model EcomOrderItem {
+  id        Int                 @id @default(autoincrement())
+  orderId   Int
+  order     EcomOrder           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId Int
+  product   EcomProduct         @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  variantId Int?
+  variant   EcomProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  // Snapshot at purchase time
+  productName   String
+  variantName   String?
+  unitPrice     Float
+  quantity      Int
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("ecom_order_items")
+}
+
+/// Product review by any user — verified purchase flag shows which ones are from buyers
+model EcomReview {
+  id                 Int               @id @default(autoincrement())
+  productId          Int
+  product            EcomProduct       @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  userId             Int
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  orderId            Int?              // if linked to order → isVerifiedPurchase = true
+
+  rating             Int               // 1–5
+  title              String?
+  body               String?           @db.Text
+  images             String?           // JSON array of image URLs
+
+  isVerifiedPurchase Boolean           @default(false)
+  isHidden           Boolean           @default(false) // admin can hide
+
+  replies            EcomReviewReply[]
+
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@unique([productId, userId])        // one review per user per product
+  @@index([productId])
+  @@index([userId])
+  @@map("ecom_reviews")
+}
+
+/// A reply to a review (by seller, buyer, or admin)
+model EcomReviewReply {
+  id        Int        @id @default(autoincrement())
+  reviewId  Int
+  review    EcomReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  userId    Int
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  body      String     @db.Text
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([reviewId])
+  @@map("ecom_review_replies")
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MARKETPLACE MODELS
+// ═════════════════════════════════════════════════════════════════════════════
+
+/// A P2P listing for kids/baby items (Facebook Marketplace style)
+model MarketplaceListing {
+  id          Int                      @id @default(autoincrement())
+  userId      Int
+  user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?                  @db.Text
+  price       Float
+  category    MarketplaceCategory
+  condition   MarketplaceCondition
+  zipcode     String                   // seller location for geo filtering
+  placeName   String?                  // human-readable location
+
+  status      MarketplaceListingStatus @default(ACTIVE)
+
+  images      MarketplaceImage[]
+  savedBy     MarketplaceSavedListing[]
+
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  @@index([userId])
+  @@index([zipcode])
+  @@index([category])
+  @@index([status])
+  @@map("marketplace_listings")
+}
+
+/// Images for a marketplace listing
+model MarketplaceImage {
+  id        Int                @id @default(autoincrement())
+  listingId Int
+  listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  url       String
+  isPrimary Boolean            @default(false)
+  sortOrder Int                @default(0)
+
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([listingId])
+  @@map("marketplace_images")
+}
+
+/// A user's saved/bookmarked marketplace listings
+model MarketplaceSavedListing {
+  id        Int                @id @default(autoincrement())
+  userId    Int
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  listingId Int
+  listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime           @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@map("marketplace_saved_listings")
+}
+
