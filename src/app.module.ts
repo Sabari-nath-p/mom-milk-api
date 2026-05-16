@@ -22,6 +22,7 @@ import { DonationsModule } from "./donations/donations.module";
 import { StripeRawBodyMiddleware } from "./donations/stripe-raw.middleware";
 import { EcomModule } from "./ecom/ecom.module";
 import { MarketplaceModule } from "./marketplace/marketplace.module";
+import { UploadsModule } from "./uploads/uploads.module";
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { MarketplaceModule } from "./marketplace/marketplace.module";
     DonationsModule,
     EcomModule,
     MarketplaceModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

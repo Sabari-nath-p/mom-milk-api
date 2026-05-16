@@ -23,6 +23,23 @@ services:
       retries: 5
     command: --default-authentication-plugin=mysql_native_password
 
+  # MinIO (S3-compatible storage)
+  minio:
+    image: minio/minio:latest
+    container_name: moms_milk_minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - moms_milk_network
+
   # NestJS API
   api:
     build:
@@ -41,6 +58,13 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-uploads}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
     ports:
       - "${API_PORT:-3000}:3000"
     volumes:
@@ -52,6 +76,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      minio:
+        condition: service_started
     command: >
       sh -c "
         echo 'Setting up database...' &&
@@ -83,6 +109,8 @@ services:
 
 volumes:
   mysql_data:
+    driver: local
+  minio_data:
     driver: local
 
 networks:

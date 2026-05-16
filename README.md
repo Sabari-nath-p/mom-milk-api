@@ -200,6 +200,9 @@ docker-compose up -d
 - `POST /geolocation/zipcodes/import` - Import zipcode data from Excel (.xlsx) or CSV (admin) **⚠️ Clears existing data**
 - `GET /geolocation/zipcodes` - List zipcodes (admin)
 
+### **Uploads**
+- `POST /uploads/images` - Upload multiple images (multipart/form-data, field name: `files`, requires Bearer token)
+
 ### **Baby Care**
 - `POST /babies` - Create baby profile
 - `GET /babies` - Get user's babies
@@ -207,6 +210,19 @@ docker-compose up -d
 - `POST /diaper-logs` - Log diaper change
 - `POST /sleep-logs` - Log sleep
 - `GET /analytics/care-summary` - Get care analytics
+
+## 🗂️ MinIO (Image Storage)
+
+The image upload endpoint stores files in MinIO (S3-compatible).
+
+### **Environment Variables**
+- `MINIO_ENDPOINT` (default: `localhost`)
+- `MINIO_PORT` (default: `9000`)
+- `MINIO_USE_SSL` (default: `false`)
+- `MINIO_ACCESS_KEY` (default: `minioadmin`)
+- `MINIO_SECRET_KEY` (default: `minioadmin`)
+- `MINIO_BUCKET` (default: `uploads`)
+- `MINIO_PUBLIC_URL` (optional, example: `http://localhost:9000`) — if set, the API returns public-style URLs; otherwise it returns presigned GET URLs
 
 ## 🗄️ Database Schema
 
