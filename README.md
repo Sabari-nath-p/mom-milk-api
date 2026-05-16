@@ -221,8 +221,8 @@ The image upload endpoint stores files in MinIO (S3-compatible).
 - `MINIO_USE_SSL` (default: `false`)
 - `MINIO_ACCESS_KEY` (default: `minioadmin`)
 - `MINIO_SECRET_KEY` (default: `minioadmin`)
-- `MINIO_BUCKET` (default: `uploads`)
-- `MINIO_PUBLIC_URL` (optional, example: `http://localhost:9000`) — if set, the API returns public-style URLs; otherwise it returns presigned GET URLs
+- `MINIO_BUCKET` (default: `image`)
+- `MINIO_PUBLIC_URL` (example: `http://localhost:9000`) — required to return permanent public URLs (no signatures)
 
 ## 🗄️ Database Schema
 

@@ -25,7 +25,7 @@ export class UploadsService {
     ) { }
 
     private getBucketName(): string {
-        return this.configService.get<string>('MINIO_BUCKET', 'uploads');
+        return this.configService.get<string>('MINIO_BUCKET', 'image');
     }
 
     private getPublicBaseUrl(): string | undefined {
@@ -33,10 +33,19 @@ export class UploadsService {
         return value ? value.replace(/\/$/, '') : undefined;
     }
 
-    private getPresignExpirySeconds(): number {
-        const raw = this.configService.get<string>('MINIO_PRESIGN_EXPIRES_SECONDS', '86400');
-        const expiry = Number.parseInt(raw, 10);
-        return Number.isFinite(expiry) && expiry > 0 ? expiry : 86400;
+    private buildPublicReadPolicy(bucket: string): string {
+        return JSON.stringify({
+            Version: '2012-10-17',
+            Statement: [
+                {
+                    Sid: 'PublicRead',
+                    Effect: 'Allow',
+                    Principal: '*',
+                    Action: ['s3:GetObject'],
+                    Resource: [`arn:aws:s3:::${bucket}/*`],
+                },
+            ],
+        });
     }
 
     private async ensureBucket(bucket: string): Promise<void> {
@@ -47,6 +56,9 @@ export class UploadsService {
         if (!exists) {
             await this.minioClient.makeBucket(bucket, '');
         }
+
+        // Ensure objects are readable via plain URL (no signature)
+        await this.minioClient.setBucketPolicy(bucket, this.buildPublicReadPolicy(bucket));
 
         this.ensuredBuckets.add(bucket);
     }
@@ -78,12 +90,6 @@ export class UploadsService {
 
         const etag = typeof result === 'string' ? result : result?.etag;
         return { etag: etag ?? undefined };
-    }
-
-    private async presignedGetUrl(bucket: string, objectName: string): Promise<string> {
-        const expiry = this.getPresignExpirySeconds();
-
-        return this.minioClient.presignedGetObject(bucket, objectName, expiry);
     }
 
     private buildPublicUrl(bucket: string, objectName: string): string | undefined {
@@ -122,8 +128,12 @@ export class UploadsService {
                 mimeType: file.mimetype,
             });
 
-            const publicUrl = this.buildPublicUrl(bucket, objectName);
-            const url = publicUrl ?? (await this.presignedGetUrl(bucket, objectName));
+            const url = this.buildPublicUrl(bucket, objectName);
+            if (!url) {
+                throw new InternalServerErrorException(
+                    'MINIO_PUBLIC_URL is required to return a permanent public image URL (non-signed).',
+                );
+            }
 
             results.push({
                 bucket,
