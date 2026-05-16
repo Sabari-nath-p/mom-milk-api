@@ -16,7 +16,7 @@ import { FirebaseModule } from "./firebase/firebase.module";
 import { ContactFormModule } from "./contact-form/contact-form.module";
 import { ChatModule } from "./chat/chat.module";
 import { MailerModule } from "@nestjs-modules/mailer";
-import { PugAdapter } from "@nestjs-modules/mailer/dist/adapters/pug.adapter";
+import { PugAdapter } from "./mail/pug.adapter";
 import { join } from "path";
 import { DonationsModule } from "./donations/donations.module";
 import { StripeRawBodyMiddleware } from "./donations/stripe-raw.middleware";
