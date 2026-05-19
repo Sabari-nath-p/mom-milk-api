@@ -29,8 +29,44 @@ export class MarketplaceService {
 
     // ─── Listings ─────────────────────────────────────────────────────────────
 
+    private normalizeImagesInput(images: unknown) {
+        if (!Array.isArray(images)) return undefined;
+
+        const normalized = images
+            .map((img: any) => {
+                if (typeof img === 'string') {
+                    return { url: img };
+                }
+
+                if (!img || typeof img !== 'object') return null;
+                if (typeof img.url !== 'string' || img.url.trim() === '') return null;
+
+                const sortOrderNumber =
+                    img.sortOrder === undefined || img.sortOrder === null || img.sortOrder === ''
+                        ? undefined
+                        : Number(img.sortOrder);
+
+                const isPrimaryValue =
+                    img.isPrimary === 'true'
+                        ? true
+                        : img.isPrimary === 'false'
+                            ? false
+                            : img.isPrimary;
+
+                return {
+                    url: img.url,
+                    ...(typeof isPrimaryValue === 'boolean' ? { isPrimary: isPrimaryValue } : {}),
+                    ...(Number.isFinite(sortOrderNumber) ? { sortOrder: Math.floor(sortOrderNumber) } : {}),
+                };
+            })
+            .filter(Boolean);
+
+        return normalized as { url: string; isPrimary?: boolean; sortOrder?: number }[];
+    }
+
     async create(userId: number, dto: CreateListingDto) {
         const { images, ...listingData } = dto;
+        const normalizedImages = this.normalizeImagesInput(images);
 
         // Auto-resolve placeName from ZipCode table if not provided
         let placeName = dto.placeName;
@@ -44,7 +80,7 @@ export class MarketplaceService {
                 userId,
                 ...listingData,
                 placeName,
-                images: images ? { create: images } : undefined,
+                images: normalizedImages ? { create: normalizedImages } : undefined,
             },
             include: LISTING_INCLUDE,
         });
@@ -53,15 +89,39 @@ export class MarketplaceService {
     async update(userId: number, listingId: number, dto: UpdateListingDto) {
         const listing = await this.ensureOwner(userId, listingId);
 
-        if (listing.status !== MarketplaceListingStatus.ACTIVE) {
-            throw new BadRequestException('Only active listings can be edited');
+        if (listing.status === MarketplaceListingStatus.REMOVED) {
+            throw new BadRequestException('Removed listings cannot be edited');
+        }
+
+        if (listing.status === MarketplaceListingStatus.SOLD) {
+            throw new BadRequestException('Sold listings cannot be edited');
         }
 
         const { images, ...listingData } = dto;
+        const normalizedImages = this.normalizeImagesInput(images);
+
+        // Auto-resolve placeName if zipcode is updated and placeName not provided
+        let resolvedPlaceName: string | undefined;
+        if (!dto.placeName && dto.zipcode) {
+            const zipData = await this.geoService.getZipCodeCoordinates(dto.zipcode);
+            resolvedPlaceName = zipData?.placeName ?? dto.zipcode;
+        }
+
+        const imagesUpdate =
+            images !== undefined
+                ? {
+                    deleteMany: {},
+                    ...(normalizedImages && normalizedImages.length > 0 ? { create: normalizedImages } : {}),
+                }
+                : undefined;
 
         return this.prisma.marketplaceListing.update({
             where: { id: listingId },
-            data: listingData,
+            data: {
+                ...listingData,
+                ...(resolvedPlaceName !== undefined ? { placeName: resolvedPlaceName } : {}),
+                ...(imagesUpdate !== undefined ? { images: imagesUpdate } : {}),
+            },
             include: LISTING_INCLUDE,
         });
     }

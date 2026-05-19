@@ -1,8 +1,8 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
-    IsString, IsOptional, IsNumber, IsEnum, IsPositive, IsArray, IsInt,
+    IsString, IsOptional, IsNumber, IsEnum, IsPositive, IsArray, IsInt, ValidateNested, IsBoolean,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { MarketplaceCategory, MarketplaceCondition, MarketplaceListingStatus } from '@prisma/client';
 
 // ─── Images ──────────────────────────────────────────────────────────────────
@@ -14,10 +14,18 @@ export class MarketplaceImageDto {
 
     @ApiPropertyOptional()
     @IsOptional()
+    @Transform(({ value }) => {
+        if (value === 'true') return true;
+        if (value === 'false') return false;
+        return value;
+    })
+    @IsBoolean()
     isPrimary?: boolean;
 
     @ApiPropertyOptional()
     @IsOptional()
+    @Type(() => Number)
+    @IsInt()
     sortOrder?: number;
 }
 
@@ -34,6 +42,7 @@ export class CreateListingDto {
     description?: string;
 
     @ApiProperty({ example: 1500 })
+    @Type(() => Number)
     @IsNumber()
     @IsPositive()
     price: number;
@@ -58,6 +67,8 @@ export class CreateListingDto {
     @ApiPropertyOptional({ type: [MarketplaceImageDto] })
     @IsOptional()
     @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => MarketplaceImageDto)
     images?: MarketplaceImageDto[];
 }
 
