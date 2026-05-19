@@ -90,14 +90,14 @@ export class MarketplaceService {
             search, category, condition, zipcode, radiusKm = 50,
             minPrice, maxPrice, page = 1, limit = 20,
         } = query;
-        const skip = (page - 1) * limit;
+        const { page: safePage, limit: safeLimit, skip } = this.normalizePagination(page, limit);
 
         // Geo filter
         let zipcodeFilter: string[] | undefined;
         if (zipcode) {
             const nearby = await this.geoService.findNearbyZipCodes(zipcode, radiusKm);
             zipcodeFilter = nearby.map(z => z.zipcode);
-            if (zipcodeFilter.length === 0) return this.emptyPage(page, limit);
+            if (zipcodeFilter.length === 0) return this.emptyPage(safePage, safeLimit);
         }
 
         const where: any = {
@@ -120,7 +120,7 @@ export class MarketplaceService {
             this.prisma.marketplaceListing.findMany({
                 where,
                 skip,
-                take: limit,
+                take: safeLimit,
                 include: LISTING_INCLUDE,
                 orderBy: { createdAt: 'desc' },
             }),
@@ -130,12 +130,12 @@ export class MarketplaceService {
         return {
             data: listings,
             pagination: {
-                currentPage: page,
-                totalPages: Math.ceil(total / limit),
+                currentPage: safePage,
+                totalPages: Math.ceil(total / safeLimit),
                 totalItems: total,
-                itemsPerPage: limit,
-                hasNextPage: page < Math.ceil(total / limit),
-                hasPreviousPage: page > 1,
+                itemsPerPage: safeLimit,
+                hasNextPage: safePage < Math.ceil(total / safeLimit),
+                hasPreviousPage: safePage > 1,
             },
         };
     }
@@ -155,12 +155,12 @@ export class MarketplaceService {
     }
 
     async getMyListings(userId: number, page = 1, limit = 20) {
-        const skip = (page - 1) * limit;
+        const { page: safePage, limit: safeLimit, skip } = this.normalizePagination(page, limit);
         const [listings, total] = await Promise.all([
             this.prisma.marketplaceListing.findMany({
                 where: { userId, status: { not: MarketplaceListingStatus.REMOVED } },
                 skip,
-                take: limit,
+                take: safeLimit,
                 include: LISTING_INCLUDE,
                 orderBy: { createdAt: 'desc' },
             }),
@@ -171,7 +171,12 @@ export class MarketplaceService {
 
         return {
             data: listings,
-            pagination: { currentPage: page, totalPages: Math.ceil(total / limit), totalItems: total, itemsPerPage: limit },
+            pagination: {
+                currentPage: safePage,
+                totalPages: Math.ceil(total / safeLimit),
+                totalItems: total,
+                itemsPerPage: safeLimit,
+            },
         };
     }
 
@@ -209,12 +214,12 @@ export class MarketplaceService {
     }
 
     async getSavedListings(userId: number, page = 1, limit = 20) {
-        const skip = (page - 1) * limit;
+        const { page: safePage, limit: safeLimit, skip } = this.normalizePagination(page, limit);
         const [saved, total] = await Promise.all([
             this.prisma.marketplaceSavedListing.findMany({
                 where: { userId },
                 skip,
-                take: limit,
+                take: safeLimit,
                 include: {
                     listing: {
                         include: LISTING_INCLUDE,
@@ -227,7 +232,12 @@ export class MarketplaceService {
 
         return {
             data: saved.map(s => s.listing),
-            pagination: { currentPage: page, totalPages: Math.ceil(total / limit), totalItems: total, itemsPerPage: limit },
+            pagination: {
+                currentPage: safePage,
+                totalPages: Math.ceil(total / safeLimit),
+                totalItems: total,
+                itemsPerPage: safeLimit,
+            },
         };
     }
 
@@ -261,7 +271,7 @@ export class MarketplaceService {
 
     async adminGetAllListings(query: ListingQueryDto & { status?: MarketplaceListingStatus }) {
         const { page = 1, limit = 20, status, category, search } = query as any;
-        const skip = (page - 1) * limit;
+        const { page: safePage, limit: safeLimit, skip } = this.normalizePagination(page, limit);
 
         const where: any = {
             ...(status && { status }),
@@ -275,7 +285,7 @@ export class MarketplaceService {
             this.prisma.marketplaceListing.findMany({
                 where,
                 skip,
-                take: limit,
+                take: safeLimit,
                 include: LISTING_INCLUDE,
                 orderBy: { createdAt: 'desc' },
             }),
@@ -284,7 +294,12 @@ export class MarketplaceService {
 
         return {
             data: listings,
-            pagination: { currentPage: page, totalPages: Math.ceil(total / limit), totalItems: total, itemsPerPage: limit },
+            pagination: {
+                currentPage: safePage,
+                totalPages: Math.ceil(total / safeLimit),
+                totalItems: total,
+                itemsPerPage: safeLimit,
+            },
         };
     }
 
@@ -302,5 +317,20 @@ export class MarketplaceService {
             data: [],
             pagination: { currentPage: page, totalPages: 0, totalItems: 0, itemsPerPage: limit, hasNextPage: false, hasPreviousPage: false },
         };
+    }
+
+    private normalizePagination(pageInput: unknown, limitInput: unknown) {
+        const defaultPage = 1;
+        const defaultLimit = 20;
+        const maxLimit = 100;
+
+        const pageNumber = Number(pageInput);
+        const limitNumber = Number(limitInput);
+
+        const page = Number.isFinite(pageNumber) && pageNumber > 0 ? Math.floor(pageNumber) : defaultPage;
+        const limitRaw = Number.isFinite(limitNumber) && limitNumber > 0 ? Math.floor(limitNumber) : defaultLimit;
+        const limit = Math.min(limitRaw, maxLimit);
+
+        return { page, limit, skip: (page - 1) * limit };
     }
 }

@@ -16,6 +16,14 @@ import { MarketplaceImageDto } from '../dto/listing.dto';
 export class MarketplaceController {
     constructor(private readonly marketplaceService: MarketplaceService) {}
 
+    private parsePositiveInt(value: unknown, fallback: number) {
+        if (value === undefined || value === null || value === '') return fallback;
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed)) return fallback;
+        const intValue = Math.floor(parsed);
+        return intValue > 0 ? intValue : fallback;
+    }
+
     // ─── Public: Browse ───────────────────────────────────────────────────────
 
     @Get('listings')
@@ -84,10 +92,14 @@ export class MarketplaceController {
     @ApiQuery({ name: 'limit', required: false })
     getMyListings(
         @Request() req,
-        @Query('page') page?: number,
-        @Query('limit') limit?: number,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
     ) {
-        return this.marketplaceService.getMyListings(req.user.id, page, limit);
+        return this.marketplaceService.getMyListings(
+            req.user.id,
+            this.parsePositiveInt(page, 1),
+            this.parsePositiveInt(limit, 20),
+        );
     }
 
     // ─── Images ───────────────────────────────────────────────────────────────
@@ -142,10 +154,14 @@ export class MarketplaceController {
     @ApiQuery({ name: 'limit', required: false })
     getSaved(
         @Request() req,
-        @Query('page') page?: number,
-        @Query('limit') limit?: number,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
     ) {
-        return this.marketplaceService.getSavedListings(req.user.id, page, limit);
+        return this.marketplaceService.getSavedListings(
+            req.user.id,
+            this.parsePositiveInt(page, 1),
+            this.parsePositiveInt(limit, 20),
+        );
     }
 
     // ─── Admin ────────────────────────────────────────────────────────────────
