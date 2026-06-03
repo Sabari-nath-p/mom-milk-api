@@ -7,7 +7,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { CreateZipCodeDto, UpdateZipCodeDto } from "../dto/request.dto";
 import * as fs from "fs";
 import * as path from "path";
-import * as csv from "csv-parser";
+import csv = require("csv-parser");
 import * as XLSX from "xlsx";
 import { Client, AddressType } from "@googlemaps/google-maps-services-js";
 import { ConfigService } from "@nestjs/config";
@@ -70,12 +70,19 @@ export class GeolocationService {
    * Get coordinates for a zipcode
    * Fallback to Google Geocoding API if not found in DB
    */
-  async getZipCodeCoordinates(zipcode: string): Promise<{
+  async getZipCodeCoordinates(
+    zipcode: string,
+    options?: {
+      allowExternalLookup?: boolean;
+    },
+  ): Promise<{
     latitude: number;
     longitude: number;
     placeName: string;
     country: string;
   } | null> {
+    const allowExternalLookup = options?.allowExternalLookup ?? true;
+
     // 1. Try to find in database
     const zipCodeData = await this.prisma.zipCode.findUnique({
       where: { zipcode },
@@ -89,6 +96,10 @@ export class GeolocationService {
 
     if (zipCodeData) {
       return zipCodeData;
+    }
+
+    if (!allowExternalLookup) {
+      return null;
     }
 
     // 2. If not found, try Google Geocoding API
@@ -155,9 +166,11 @@ export class GeolocationService {
             `Successfully fetched and saved zipcode ${zipcode} from Google API`,
           );
         } catch (dbError) {
+          const dbMessage =
+            dbError instanceof Error ? dbError.message : String(dbError);
           console.warn(
             `Failed to save fetched zipcode ${zipcode} to DB:`,
-            dbError.message,
+            dbMessage,
           );
           // Continue even if save fails, return the data
         }
@@ -173,7 +186,8 @@ export class GeolocationService {
       console.warn(`No results found for zipcode ${zipcode} from Google API`);
       return null;
     } catch (error) {
-      console.error("Error fetching from Google Geocoding API:", error.message);
+      const errMessage = error instanceof Error ? error.message : String(error);
+      console.error("Error fetching from Google Geocoding API:", errMessage);
       return null;
     }
   }
@@ -433,7 +447,8 @@ export class GeolocationService {
         );
         return { imported, skipped, errors, deleted };
       } catch (error) {
-        throw new Error(`Failed to process Excel file: ${error.message}`);
+        const errMessage = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to process Excel file: ${errMessage}`);
       }
     } else if (fileExtension === ".csv") {
       // Handle CSV files (existing logic)
