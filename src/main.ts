@@ -21,7 +21,7 @@ async function bootstrap() {
       // 🚨 Ignore validation for the Stripe webhook route
       // THIS FIXES "stream is not readable"
       skipMissingProperties: true,
-    })
+    }),
   );
 
   // Enable CORS

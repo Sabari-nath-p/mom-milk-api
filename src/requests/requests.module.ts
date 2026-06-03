@@ -23,4 +23,4 @@ import { JwtModule } from "@nestjs/jwt";
   providers: [RequestService, GeolocationService],
   exports: [RequestService, GeolocationService],
 })
-export class RequestModule { }
+export class RequestModule {}

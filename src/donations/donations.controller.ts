@@ -45,7 +45,7 @@ export class DonationsController {
     try {
       const result = await this.donationsService.handleStripeWebhook(
         req.rawBody,
-        signature
+        signature,
       );
 
       console.log("✅ Webhook handled successfully:", result.message);
@@ -72,7 +72,7 @@ export class DonationsController {
   @ApiOperation({ summary: "Update donation status" })
   update(
     @Param("id", ParseIntPipe) id: number,
-    @Body() dto: UpdateDonationDto
+    @Body() dto: UpdateDonationDto,
   ) {
     return this.donationsService.update(id, dto);
   }

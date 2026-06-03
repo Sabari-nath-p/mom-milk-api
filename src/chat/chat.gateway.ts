@@ -31,8 +31,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(
     private chatService: ChatService,
-    private jwtService: JwtService
-  ) { }
+    private jwtService: JwtService,
+  ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
@@ -90,7 +90,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage("sendMessage")
   async handleSendMessage(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { recipientId: number; content: string }
+    @MessageBody() data: { recipientId: number; content: string },
   ) {
     try {
       const senderId = client.userId;
@@ -107,7 +107,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Get session info from sender's perspective (otherUser = recipient)
       const senderSession = await this.chatService.getOrCreateSession(
         senderId,
-        data.recipientId
+        data.recipientId,
       );
 
       // Check if recipient is online
@@ -126,7 +126,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // Get session from recipient's perspective (otherUser = sender)
         const recipientSession = await this.chatService.getOrCreateSession(
           data.recipientId,
-          senderId
+          senderId,
         );
 
         this.server.to(`user:${data.recipientId}`).emit("newMessage", {
@@ -135,7 +135,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           session: recipientSession,
         });
         console.log(
-          `Message sent in real-time to online user ${data.recipientId}`
+          `Message sent in real-time to online user ${data.recipientId}`,
         );
       } else {
         // Recipient is offline - send push notification
@@ -159,7 +159,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage("joinSession")
   async handleJoinSession(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { sessionId: number }
+    @MessageBody() data: { sessionId: number },
   ) {
     try {
       const userId = client.userId;
@@ -180,7 +180,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage("leaveSession")
   handleLeaveSession(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { sessionId: number }
+    @MessageBody() data: { sessionId: number },
   ) {
     client.leave(`session:${data.sessionId}`);
     return { success: true };
@@ -189,7 +189,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage("typing")
   handleTyping(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { recipientId: number; isTyping: boolean }
+    @MessageBody() data: { recipientId: number; isTyping: boolean },
   ) {
     const senderId = client.userId;
     if (!senderId) {
@@ -208,7 +208,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage("markAsRead")
   async handleMarkAsRead(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { messageIds: number[] }
+    @MessageBody() data: { messageIds: number[] },
   ) {
     try {
       const userId = client.userId;
@@ -218,7 +218,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const result = await this.chatService.markMessagesAsRead(
         userId,
-        data.messageIds
+        data.messageIds,
       );
 
       // Notify sender that messages were read
@@ -244,7 +244,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage("markAsDelivered")
   async handleMarkAsDelivered(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { messageIds: number[] }
+    @MessageBody() data: { messageIds: number[] },
   ) {
     try {
       const userId = client.userId;
@@ -253,7 +253,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       const result = await this.chatService.markMessagesAsDelivered(
-        data.messageIds
+        data.messageIds,
       );
 
       // Notify sender that messages were delivered
@@ -292,7 +292,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
    */
   private async sendUnreadMessagesToUser(
     client: AuthenticatedSocket,
-    userId: number
+    userId: number,
   ) {
     try {
       // Get all sessions for this user
@@ -322,7 +322,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Send each unread message to the user
       if (unreadMessages.length > 0) {
         console.log(
-          `Sending ${unreadMessages.length} unread messages to user ${userId}`
+          `Sending ${unreadMessages.length} unread messages to user ${userId}`,
         );
 
         for (const message of unreadMessages) {

@@ -1,23 +1,30 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { GeolocationService } from './geolocation.service';
-import { FirebaseService } from '../../firebase/firebase.service';
-import { MailService } from '../../mail/mail.service';
-import { ChatService } from '../../chat/chat.service';
 import {
-    CreateMilkRequestDto,
-    UpdateMilkRequestDto,
-    AcceptRequestDto,
-    UpdateAvailabilityDto,
-    DonorSearchFiltersDto,
-    RequestFiltersDto,
-    DonorSearchResultDto,
-    MilkRequestResponseDto,
-    NotificationDto,
-    SendRequestToSpecificDonorDto
-} from '../dto/request.dto';
-import { RequestStatus, RequestType, UserType } from '@prisma/client';
-import { AdminRequestFiltersDto } from '../dto/admin-request-filters.dto';
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { PrismaService } from "../../prisma/prisma.service";
+import { GeolocationService } from "./geolocation.service";
+import { FirebaseService } from "../../firebase/firebase.service";
+import { MailService } from "../../mail/mail.service";
+import { ChatService } from "../../chat/chat.service";
+import {
+  CreateMilkRequestDto,
+  UpdateMilkRequestDto,
+  AcceptRequestDto,
+  UpdateAvailabilityDto,
+  DonorSearchFiltersDto,
+  RequestFiltersDto,
+  DonorSearchResultDto,
+  MilkRequestResponseDto,
+  NotificationDto,
+  SendRequestToSpecificDonorDto,
+  BuyerSearchFiltersDto,
+  BuyerSearchResultDto,
+} from "../dto/request.dto";
+import { RequestStatus, RequestType, UserType } from "@prisma/client";
+import { AdminRequestFiltersDto } from "../dto/admin-request-filters.dto";
 
 @Injectable()
 export class RequestService {
@@ -26,13 +33,13 @@ export class RequestService {
     private geolocationService: GeolocationService,
     private firebaseService: FirebaseService,
     private mailService: MailService,
-    private chatService: ChatService
+    private chatService: ChatService,
   ) {}
 
   // Milk Request Management
   async createRequest(
     userId: number,
-    createRequestDto: CreateMilkRequestDto
+    createRequestDto: CreateMilkRequestDto,
   ): Promise<MilkRequestResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -218,18 +225,18 @@ export class RequestService {
       requests.map(async (request) => {
         const distance = await this.calculateRequestDistance(
           donor.zipcode,
-          request.requesterZipcode
+          request.requesterZipcode,
         );
         return {
           ...this.formatRequestResponse(request),
           distance,
         };
-      })
+      }),
     );
 
     // Sort by distance
     requestsWithDistance.sort(
-      (a, b) => (a.distance || Infinity) - (b.distance || Infinity)
+      (a, b) => (a.distance || Infinity) - (b.distance || Infinity),
     );
 
     return {
@@ -241,7 +248,7 @@ export class RequestService {
   async acceptRequest(
     donorId: number,
     requestId: number,
-    acceptDto: AcceptRequestDto
+    acceptDto: AcceptRequestDto,
   ): Promise<MilkRequestResponseDto> {
     const donor = await this.prisma.user.findUnique({
       where: { id: donorId },
@@ -292,7 +299,7 @@ export class RequestService {
     // Calculate distance
     const distance = await this.calculateRequestDistance(
       donor.zipcode,
-      request.requesterZipcode
+      request.requesterZipcode,
     );
 
     const updatedRequest = await this.prisma.milkRequest.update({
@@ -344,7 +351,7 @@ export class RequestService {
         donor.phone || "Not available",
         request.title,
         donor.facebookLink,
-        donor.instagramLink
+        donor.instagramLink,
       );
     } catch (error) {
       console.error("Failed to send email notification:", error);
@@ -357,7 +364,7 @@ export class RequestService {
           request.requester.fcmToken,
           donor.name,
           request.title,
-          requestId
+          requestId,
         );
       } catch (error) {
         console.error("Failed to send FCM notification:", error);
@@ -368,7 +375,7 @@ export class RequestService {
     try {
       await this.chatService.getOrCreateSession(donorId, request.requesterId);
       console.log(
-        `Chat session created between donor ${donorId} and requester ${request.requesterId}`
+        `Chat session created between donor ${donorId} and requester ${request.requesterId}`,
       );
     } catch (error) {
       console.error("Failed to create chat session:", error);
@@ -381,7 +388,7 @@ export class RequestService {
   async rejectRequest(
     donorId: number,
     requestId: number,
-    rejectDto: AcceptRequestDto
+    rejectDto: AcceptRequestDto,
   ): Promise<MilkRequestResponseDto> {
     const donor = await this.prisma.user.findUnique({
       where: { id: donorId },
@@ -464,7 +471,7 @@ export class RequestService {
         request.requester.name,
         donor.name,
         request.title,
-        rejectDto.message || "No reason provided"
+        rejectDto.message || "No reason provided",
       );
     } catch (error) {
       console.error("Failed to send Firebase notification:", error);
@@ -476,7 +483,7 @@ export class RequestService {
   async updateRequestStatus(
     userId: number,
     requestId: number,
-    updateDto: UpdateMilkRequestDto
+    updateDto: UpdateMilkRequestDto,
   ): Promise<MilkRequestResponseDto> {
     const request = await this.prisma.milkRequest.findUnique({
       where: { id: requestId },
@@ -493,7 +500,7 @@ export class RequestService {
     // Check if user has permission to update
     if (request.requesterId !== userId && request.donorId !== userId) {
       throw new ForbiddenException(
-        "You do not have permission to update this request"
+        "You do not have permission to update this request",
       );
     }
 
@@ -550,7 +557,7 @@ export class RequestService {
   // Donor Search and Discovery
   async searchDonors(
     requesterId: number,
-    filters: DonorSearchFiltersDto
+    filters: DonorSearchFiltersDto,
   ): Promise<{ data: DonorSearchResultDto[]; pagination: any }> {
     const {
       page = 1,
@@ -677,7 +684,7 @@ export class RequestService {
           referenceCoords.latitude,
           referenceCoords.longitude,
           zipCodeData.latitude,
-          zipCodeData.longitude
+          zipCodeData.longitude,
         );
       }
 
@@ -726,7 +733,7 @@ export class RequestService {
 
         // Check if there's an accepted request to determine if phone should be shown
         const hasAcceptedRequest = donor.receivedRequests.some(
-          (r) => r.status === RequestStatus.ACCEPTED
+          (r) => r.status === RequestStatus.ACCEPTED,
         );
 
         donorsWithDistance.push({
@@ -793,10 +800,236 @@ export class RequestService {
     };
   }
 
+  // Buyer Search and Discovery
+  async searchBuyers(
+    searcherId: number,
+    filters: BuyerSearchFiltersDto,
+  ): Promise<{ data: BuyerSearchResultDto[]; pagination: any }> {
+    const {
+      page = 1,
+      limit = 10,
+      maxDistance = 50,
+      ...filterOptions
+    } = filters;
+    const skip = (page - 1) * limit;
+
+    const searcher = await this.prisma.user.findUnique({
+      where: { id: searcherId },
+      select: { zipcode: true, phone: true },
+    });
+
+    if (!searcher) {
+      throw new NotFoundException("Searcher not found");
+    }
+
+    // Use provided zipcode parameter or fall back to searcher's zipcode
+    const referenceZipcode = filterOptions.zipcode || searcher.zipcode;
+
+    // Determine if US-based by checking if phone number starts with +1
+    const isUSBased = searcher.phone?.startsWith("+1") || false;
+
+    // Get reference zipcode coordinates once (optimization: single query)
+    const referenceCoords =
+      await this.geolocationService.getZipCodeCoordinates(referenceZipcode);
+
+    if (!referenceCoords) {
+      return {
+        data: [],
+        pagination: this.createPaginationResponse(page, limit, 0),
+      };
+    }
+
+    // Base where clause for all buyers
+    const baseWhereClause: any = {
+      userType: UserType.BUYER,
+      isActive: true,
+    };
+
+    if (filterOptions.bloodGroup) {
+      baseWhereClause.bloodGroup = filterOptions.bloodGroup;
+    }
+
+    // Add buyer name search if provided
+    if (filterOptions.buyerName) {
+      baseWhereClause.name = {
+        contains: filterOptions.buyerName,
+      };
+    }
+
+    // Get ALL buyers and calculate distances from the reference zipcode
+    const allBuyers = await this.prisma.user.findMany({
+      where: baseWhereClause,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        zipcode: true,
+        userType: true,
+        description: true,
+        bloodGroup: true,
+        createdAt: true,
+        sentRequests: {
+          where: {
+            donorId: searcherId,
+          },
+          select: {
+            id: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    // OPTIMIZATION: Batch fetch all unique zipcodes to avoid N+1 queries
+    const uniqueZipcodes = [...new Set(allBuyers.map((b) => b.zipcode))];
+    const zipCodesData = await this.prisma.zipCode.findMany({
+      where: {
+        zipcode: { in: uniqueZipcodes },
+      },
+      select: {
+        zipcode: true,
+        latitude: true,
+        longitude: true,
+        placeName: true,
+        country: true,
+      },
+    });
+
+    // Create a map for O(1) zipcode lookup
+    const zipCodeMap = new Map(zipCodesData.map((z) => [z.zipcode, z]));
+
+    // Calculate distances for all buyers and filter by maxDistance (only if no specific zipcode filter)
+    const buyersWithDistance: BuyerSearchResultDto[] = [];
+
+    for (const buyer of allBuyers) {
+      // Use cached zipcode data instead of querying database
+      const zipCodeData = zipCodeMap.get(buyer.zipcode);
+
+      let distance: number | null = null;
+      if (zipCodeData) {
+        // Calculate distance directly without additional database call
+        distance = this.geolocationService.calculateDistance(
+          referenceCoords.latitude,
+          referenceCoords.longitude,
+          zipCodeData.latitude,
+          zipCodeData.longitude,
+        );
+      }
+
+      // Include buyer if:
+      // 1. Specific zipcode filter is provided (include all), OR
+      // 2. Distance is calculated (including 0) and within maxDistance, OR
+      // 3. Distance cannot be calculated (zipcode not in database) - we include them but show "Distance unknown"
+      if (
+        filterOptions.zipcode ||
+        distance === null ||
+        distance <= maxDistance
+      ) {
+        // Convert distance based on country
+        let displayDistance = distance;
+        let unit = "km";
+
+        if (isUSBased && distance !== null) {
+          // Convert km to miles (1 km = 0.621371 miles)
+          displayDistance = distance * 0.621371;
+          unit = "mi";
+        }
+
+        // Format distance text for better UX
+        let distanceText: string;
+        if (distance === null) {
+          distanceText = "N/A";
+        } else if (distance >= 9999) {
+          distanceText = "N/A";
+        } else if (displayDistance < 1) {
+          // Show in meters/feet for very short distances
+          if (isUSBased) {
+            distanceText = `${Math.round(displayDistance * 5280)} ft`;
+          } else {
+            distanceText = `${Math.round(displayDistance * 1000)} m`;
+          }
+        } else {
+          distanceText = `${displayDistance.toFixed(1)} ${unit}`;
+        }
+
+        // Build full address string
+        const fullAddress = zipCodeData
+          ? [zipCodeData.placeName, zipCodeData.country]
+              .filter(Boolean)
+              .join(", ")
+          : "Unknown location";
+
+        // Check if there's an accepted request to determine if phone should be shown
+        const hasAcceptedRequest = buyer.sentRequests.some(
+          (r) => r.status === RequestStatus.ACCEPTED,
+        );
+
+        buyersWithDistance.push({
+          buyer: {
+            id: buyer.id,
+            name: buyer.name,
+            email: buyer.email,
+            zipcode: buyer.zipcode,
+            userType: buyer.userType as any,
+            description: buyer.description,
+            bloodGroup: buyer.bloodGroup,
+            createdAt: buyer.createdAt,
+          },
+          distance: distance !== null ? distance : 999999, // Put unknown distances at the end
+          distanceText,
+          hasAcceptedRequest: hasAcceptedRequest,
+          hasPendingRequest: buyer.sentRequests.length > 0,
+          buyerPhoneNumber: hasAcceptedRequest ? buyer.phone : null,
+          location: {
+            zipcode: buyer.zipcode,
+            placeName: zipCodeData?.placeName || "Unknown",
+            country: zipCodeData?.country || "Unknown",
+            latitude: zipCodeData?.latitude || 0,
+            longitude: zipCodeData?.longitude || 0,
+            fullAddress,
+          },
+        });
+      }
+    }
+
+    // Sort by distance in this order:
+    // 1. Same zipcode (distance = 0) first
+    // 2. Known distances (sorted by distance)
+    // 3. Unknown distances last
+    buyersWithDistance.sort((a, b) => {
+      // Both have unknown distance
+      if (a.distance === 999999 && b.distance === 999999) return 0;
+
+      // One has unknown distance - put it last
+      if (a.distance === 999999) return 1;
+      if (b.distance === 999999) return -1;
+
+      // Both have same zipcode (distance = 0) - maintain order
+      if (a.distance === 0 && b.distance === 0) return 0;
+
+      // One has same zipcode - put it first
+      if (a.distance === 0) return -1;
+      if (b.distance === 0) return 1;
+
+      // Both have known distances - sort by distance
+      return a.distance - b.distance;
+    });
+
+    // Apply pagination
+    const total = buyersWithDistance.length;
+    const paginatedBuyers = buyersWithDistance.slice(skip, skip + limit);
+
+    return {
+      data: paginatedBuyers,
+      pagination: this.createPaginationResponse(page, limit, total),
+    };
+  }
+
   // Availability Management
   async updateAvailability(
     donorId: number,
-    updateDto: UpdateAvailabilityDto
+    updateDto: UpdateAvailabilityDto,
   ): Promise<{ success: boolean; message: string }> {
     const donor = await this.prisma.user.findUnique({
       where: { id: donorId },
@@ -829,12 +1062,12 @@ export class RequestService {
     // Only send email notifications if 24 hours have passed since the last notification
     if (wasUnavailable && isBecomingAvailable) {
       const shouldSendEmail = this.shouldSendAvailabilityEmail(
-        donor.lastAvailabilityNotificationAt
+        donor.lastAvailabilityNotificationAt,
       );
       await this.notifyUsersOfAvailability(
         donorId,
         donor.name,
-        shouldSendEmail
+        shouldSendEmail,
       );
 
       // Update the last notification timestamp if email was sent
@@ -856,7 +1089,7 @@ export class RequestService {
   async getUserNotifications(
     userId: number,
     page: number = 1,
-    limit: number = 20
+    limit: number = 20,
   ) {
     const skip = (page - 1) * limit;
 
@@ -910,7 +1143,7 @@ export class RequestService {
   // Send Request to Specific Donor
   async sendRequestToSpecificDonor(
     requesterId: number,
-    sendRequestDto: SendRequestToSpecificDonorDto
+    sendRequestDto: SendRequestToSpecificDonorDto,
   ): Promise<MilkRequestResponseDto> {
     // Validate requester exists
     const requester = await this.prisma.user.findUnique({
@@ -967,14 +1200,14 @@ export class RequestService {
 
     if (existingPendingRequest) {
       throw new BadRequestException(
-        `You already have a pending request to this donor. Please wait for them to respond or cancel your existing request first.`
+        `You already have a pending request to this donor. Please wait for them to respond or cancel your existing request first.`,
       );
     }
 
     // Calculate distance between requester and donor
     const distance = await this.calculateRequestDistance(
       requester.zipcode,
-      donor.zipcode
+      donor.zipcode,
     );
 
     // Create the request with donor pre-assigned
@@ -1040,7 +1273,7 @@ export class RequestService {
         sendRequestDto.quantity,
         sendRequestDto.urgency,
         requester.facebookLink,
-        requester.instagramLink
+        requester.instagramLink,
       );
     } catch (error) {
       console.error("Failed to send email notification to donor:", error);
@@ -1053,7 +1286,7 @@ export class RequestService {
           donor.fcmToken,
           requester.name,
           sendRequestDto.title,
-          request.id
+          request.id,
         );
       } catch (error) {
         console.error("Failed to send FCM notification to donor:", error);
@@ -1087,7 +1320,7 @@ export class RequestService {
     // Get offers within reasonable distance (e.g., 50km)
     const nearbyZipCodes = await this.geolocationService.findNearbyZipCodes(
       buyer.zipcode,
-      50
+      50,
     );
     const nearbyZipCodeStrings = nearbyZipCodes.map((z) => z.zipcode);
 
@@ -1122,18 +1355,18 @@ export class RequestService {
       offers.map(async (offer) => {
         const distance = await this.calculateRequestDistance(
           buyer.zipcode,
-          offer.requesterZipcode
+          offer.requesterZipcode,
         );
         return {
           ...this.formatRequestResponse(offer),
           distance,
         };
-      })
+      }),
     );
 
     // Sort by distance
     offersWithDistance.sort(
-      (a, b) => (a.distance || Infinity) - (b.distance || Infinity)
+      (a, b) => (a.distance || Infinity) - (b.distance || Infinity),
     );
 
     return {
@@ -1145,7 +1378,7 @@ export class RequestService {
   // Private helper methods
   private async calculateRequestDistance(
     zipcode1: string,
-    zipcode2: string
+    zipcode2: string,
   ): Promise<number | null> {
     const coords1 =
       await this.geolocationService.getZipCodeCoordinates(zipcode1);
@@ -1160,7 +1393,7 @@ export class RequestService {
       coords1.latitude,
       coords1.longitude,
       coords2.latitude,
-      coords2.longitude
+      coords2.longitude,
     );
   }
 
@@ -1257,7 +1490,7 @@ export class RequestService {
    * Check if 24 hours have passed since the last availability notification
    */
   private shouldSendAvailabilityEmail(
-    lastNotificationAt: Date | null
+    lastNotificationAt: Date | null,
   ): boolean {
     if (!lastNotificationAt) {
       // Never sent a notification before, allow it
@@ -1275,7 +1508,7 @@ export class RequestService {
   private async notifyUsersOfAvailability(
     donorId: number,
     donorName: string,
-    sendEmail: boolean = true
+    sendEmail: boolean = true,
   ) {
     // Get donor's contact information
     const donor = await this.prisma.user.findUnique({
@@ -1327,12 +1560,12 @@ export class RequestService {
             donorName,
             request.title,
             donor?.facebookLink,
-            donor?.instagramLink
+            donor?.instagramLink,
           );
         } catch (error) {
           console.error(
             `Failed to send availability email to ${request.requester.email}:`,
-            error
+            error,
           );
         }
       }
@@ -1355,7 +1588,7 @@ export class RequestService {
         } catch (error) {
           console.error(
             `Failed to send FCM notification to user ${request.requester.id}:`,
-            error
+            error,
           );
         }
       }

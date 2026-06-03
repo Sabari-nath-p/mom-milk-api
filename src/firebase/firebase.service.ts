@@ -90,7 +90,7 @@ export class FirebaseService {
 
       apns: this.buildIOSApnsPayload(
         message.notification.title,
-        message.notification.body
+        message.notification.body,
       ),
     };
 
@@ -105,7 +105,7 @@ export class FirebaseService {
   async sendMulticastNotification(
     tokens: string[],
     notification: FCMNotificationPayload,
-    data?: { [key: string]: string }
+    data?: { [key: string]: string },
   ): Promise<admin.messaging.BatchResponse> {
     try {
       const message: admin.messaging.MulticastMessage = {
@@ -122,7 +122,7 @@ export class FirebaseService {
 
       const response = await this.app.messaging().sendEachForMulticast(message);
       this.logger.log(
-        `Successfully sent multicast message to ${response.successCount} devices`
+        `Successfully sent multicast message to ${response.successCount} devices`,
       );
 
       if (response.failureCount > 0) {
@@ -130,7 +130,7 @@ export class FirebaseService {
         response.responses.forEach((resp, idx) => {
           if (!resp.success) {
             this.logger.error(
-              `Error for token ${tokens[idx]}: ${resp.error?.message}`
+              `Error for token ${tokens[idx]}: ${resp.error?.message}`,
             );
           }
         });
@@ -152,7 +152,7 @@ export class FirebaseService {
         .messaging()
         .subscribeToTopic(tokens, topic);
       this.logger.log(
-        `Successfully subscribed ${response.successCount} tokens to topic: ${topic}`
+        `Successfully subscribed ${response.successCount} tokens to topic: ${topic}`,
       );
       return response;
     } catch (error) {
@@ -170,7 +170,7 @@ export class FirebaseService {
         .messaging()
         .unsubscribeFromTopic(tokens, topic);
       this.logger.log(
-        `Successfully unsubscribed ${response.successCount} tokens from topic: ${topic}`
+        `Successfully unsubscribed ${response.successCount} tokens from topic: ${topic}`,
       );
       return response;
     } catch (error) {
@@ -185,7 +185,7 @@ export class FirebaseService {
   async sendToTopic(
     topic: string,
     notification: FCMNotificationPayload,
-    data?: { [key: string]: string }
+    data?: { [key: string]: string },
   ): Promise<string> {
     try {
       const message: admin.messaging.Message = {
@@ -219,7 +219,7 @@ export class FirebaseService {
           token,
           data: { test: "true" },
         },
-        true
+        true,
       ); // dry run
       return true;
     } catch (error) {
@@ -235,7 +235,7 @@ export class FirebaseService {
     token: string,
     requesterName: string,
     requestTitle: string,
-    requestId: number
+    requestId: number,
   ): Promise<string> {
     return this.sendNotification({
       token,
@@ -260,7 +260,7 @@ export class FirebaseService {
     token: string,
     donorName: string,
     requestTitle: string,
-    requestId: number
+    requestId: number,
   ): Promise<string> {
     return this.sendNotification({
       token,
@@ -286,11 +286,11 @@ export class FirebaseService {
     requesterName: string,
     donorName: string,
     requestTitle: string,
-    reason?: string
+    reason?: string,
   ): Promise<void> {
     if (!this.app) {
       console.warn(
-        "Firebase Admin SDK not initialized. Cannot send notification."
+        "Firebase Admin SDK not initialized. Cannot send notification.",
       );
       return;
     }
@@ -331,7 +331,7 @@ export class FirebaseService {
    */
   async sendDonorAvailabilityNotification(
     tokens: string[],
-    donorName: string
+    donorName: string,
   ): Promise<admin.messaging.BatchResponse> {
     return this.sendMulticastNotification(
       tokens,
@@ -344,7 +344,7 @@ export class FirebaseService {
         type: "DONOR_AVAILABLE",
         donorName,
         clickAction: "DONOR_AVAILABLE_CLICK",
-      }
+      },
     );
   }
 
@@ -354,11 +354,11 @@ export class FirebaseService {
   async sendCustomNotificationByPhone(
     phone: string,
     title: string,
-    body: string
+    body: string,
   ): Promise<{ userId: number; phone: string }> {
     if (!this.app) {
       throw new Error(
-        "Firebase Admin SDK not initialized. Cannot send notification."
+        "Firebase Admin SDK not initialized. Cannot send notification.",
       );
     }
 
@@ -375,12 +375,12 @@ export class FirebaseService {
 
       if (!user.fcmToken) {
         throw new Error(
-          `No FCM token registered for user: ${user.name} (${phone})`
+          `No FCM token registered for user: ${user.name} (${phone})`,
         );
       }
 
       this.logger.log(
-        `Sending custom notification to user ${user.name} (ID: ${user.id}, Phone: ${phone})`
+        `Sending custom notification to user ${user.name} (ID: ${user.id}, Phone: ${phone})`,
       );
 
       // Send notification
@@ -406,7 +406,7 @@ export class FirebaseService {
     } catch (error) {
       this.logger.error(
         `Error sending custom notification to phone ${phone}:`,
-        error
+        error,
       );
       throw error;
     }
@@ -414,7 +414,7 @@ export class FirebaseService {
 
   private buildIOSApnsPayload(
     title: string,
-    body: string
+    body: string,
   ): admin.messaging.ApnsConfig {
     return {
       headers: {

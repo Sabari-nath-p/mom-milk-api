@@ -31,6 +31,8 @@ import {
   MilkRequestResponseDto,
   NotificationDto,
   SendRequestToSpecificDonorDto,
+  BuyerSearchFiltersDto,
+  BuyerSearchResultDto,
 } from "../dto/request.dto";
 import { AdminRequestFiltersDto } from "../dto/admin-request-filters.dto";
 
@@ -52,7 +54,7 @@ export class RequestController {
   @ApiResponse({ status: 400, description: "Bad request" })
   async createRequest(
     @Request() req,
-    @Body() createRequestDto: CreateMilkRequestDto
+    @Body() createRequestDto: CreateMilkRequestDto,
   ) {
     return this.requestService.createRequest(req.user.id, createRequestDto);
   }
@@ -103,7 +105,7 @@ export class RequestController {
   })
   async getIncomingRequests(
     @Request() req,
-    @Query() filters: RequestFiltersDto
+    @Query() filters: RequestFiltersDto,
   ) {
     return this.requestService.getIncomingRequests(req.user.id, filters);
   }
@@ -143,7 +145,7 @@ export class RequestController {
   })
   async updateAvailability(
     @Request() req,
-    @Body() updateDto: UpdateAvailabilityDto
+    @Body() updateDto: UpdateAvailabilityDto,
   ) {
     return this.requestService.updateAvailability(req.user.id, updateDto);
   }
@@ -164,12 +166,12 @@ export class RequestController {
   async updateRequest(
     @Request() req,
     @Param("id", ParseIntPipe) id: number,
-    @Body() updateRequestDto: UpdateMilkRequestDto
+    @Body() updateRequestDto: UpdateMilkRequestDto,
   ) {
     return this.requestService.updateRequestStatus(
       req.user.id,
       id,
-      updateRequestDto
+      updateRequestDto,
     );
   }
 
@@ -187,7 +189,7 @@ export class RequestController {
   async acceptRequest(
     @Request() req,
     @Param("id", ParseIntPipe) id: number,
-    @Body() acceptDto: AcceptRequestDto
+    @Body() acceptDto: AcceptRequestDto,
   ) {
     return this.requestService.acceptRequest(req.user.id, id, acceptDto);
   }
@@ -206,7 +208,7 @@ export class RequestController {
   async rejectRequest(
     @Request() req,
     @Param("id", ParseIntPipe) id: number,
-    @Body() rejectDto: AcceptRequestDto
+    @Body() rejectDto: AcceptRequestDto,
   ) {
     return this.requestService.rejectRequest(req.user.id, id, rejectDto);
   }
@@ -251,6 +253,36 @@ export class RequestController {
     return this.requestService.searchDonors(req.user.id, filters);
   }
 
+  // Buyer Search
+  @Get("search/buyers")
+  @ApiOperation({ summary: "Search for available buyers" })
+  @ApiQuery({ name: "page", required: false, description: "Page number" })
+  @ApiQuery({ name: "limit", required: false, description: "Items per page" })
+  @ApiQuery({
+    name: "maxDistance",
+    required: false,
+    description: "Maximum distance in km",
+  })
+  @ApiQuery({
+    name: "bloodGroup",
+    required: false,
+    description: "Filter by blood group",
+  })
+  @ApiQuery({
+    name: "zipcode",
+    required: false,
+    description: "Filter by buyer zipcode",
+  })
+  @ApiQuery({
+    name: "buyerName",
+    required: false,
+    description: "Search by buyer name",
+  })
+  @ApiResponse({ status: 200, description: "Buyers found successfully" })
+  async searchBuyers(@Request() req, @Query() filters: BuyerSearchFiltersDto) {
+    return this.requestService.searchBuyers(req.user.id, filters);
+  }
+
   // Notifications
   @Get("notifications")
   @ApiOperation({ summary: "Get user notifications" })
@@ -263,12 +295,12 @@ export class RequestController {
   async getNotifications(
     @Request() req,
     @Query("page") page: string = "1",
-    @Query("limit") limit: string = "20"
+    @Query("limit") limit: string = "20",
   ) {
     return this.requestService.getUserNotifications(
       req.user.id,
       parseInt(page),
-      parseInt(limit)
+      parseInt(limit),
     );
   }
 
@@ -279,11 +311,11 @@ export class RequestController {
   @ApiResponse({ status: 404, description: "Notification not found" })
   async markNotificationAsRead(
     @Request() req,
-    @Param("notificationId", ParseIntPipe) notificationId: number
+    @Param("notificationId", ParseIntPipe) notificationId: number,
   ) {
     return this.requestService.markNotificationAsRead(
       req.user.id,
-      notificationId
+      notificationId,
     );
   }
 
@@ -306,13 +338,13 @@ export class RequestController {
   @ApiResponse({ status: 404, description: "Request not found" })
   async getRequestDetails(
     @Request() req,
-    @Param("id", ParseIntPipe) id: number
+    @Param("id", ParseIntPipe) id: number,
   ) {
     // This would need to be implemented in the service
     // For now, we can fetch from the user's requests
     const userRequests = await this.requestService.getUserRequests(
       req.user.id,
-      { page: 1, limit: 1000 }
+      { page: 1, limit: 1000 },
     );
     const request = userRequests.data.find((r) => r.id === id);
 
@@ -320,7 +352,7 @@ export class RequestController {
       // Check if it's an incoming request for donors
       const incomingRequests = await this.requestService.getIncomingRequests(
         req.user.id,
-        { page: 1, limit: 1000 }
+        { page: 1, limit: 1000 },
       );
       const incomingRequest = incomingRequests.data.find((r) => r.id === id);
 
@@ -348,11 +380,11 @@ export class RequestController {
   @ApiResponse({ status: 404, description: "Donor not found" })
   async sendRequestToSpecificDonor(
     @Request() req,
-    @Body() sendRequestDto: SendRequestToSpecificDonorDto
+    @Body() sendRequestDto: SendRequestToSpecificDonorDto,
   ) {
     return this.requestService.sendRequestToSpecificDonor(
       req.user.id,
-      sendRequestDto
+      sendRequestDto,
     );
   }
 
@@ -371,7 +403,7 @@ export class RequestController {
   })
   async getAvailableMilkOffers(
     @Request() req,
-    @Query() filters: RequestFiltersDto
+    @Query() filters: RequestFiltersDto,
   ) {
     return this.requestService.getAvailableMilkOffers(req.user.id, filters);
   }

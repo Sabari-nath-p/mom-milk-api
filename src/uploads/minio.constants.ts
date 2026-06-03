@@ -1,1 +1,1 @@
-export const MINIO_CLIENT = Symbol('MINIO_CLIENT');
+export const MINIO_CLIENT = Symbol("MINIO_CLIENT");

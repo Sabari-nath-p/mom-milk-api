@@ -34,21 +34,21 @@ export class ChatService {
     ]);
 
     if (!user1 || !user2) {
-      throw new NotFoundException('One or both users not found');
+      throw new NotFoundException("One or both users not found");
     }
 
     // Assign parentId (BUYER/ADMIN) and donorId (DONOR) based on userType
     let parentId: number;
     let donorId: number;
 
-    if (user1.userType === 'DONOR' && user2.userType === 'DONOR') {
+    if (user1.userType === "DONOR" && user2.userType === "DONOR") {
       // Both are donors - use numeric ordering as fallback
       [parentId, donorId] = [userId1, userId2].sort((a, b) => a - b);
-    } else if (user1.userType === 'DONOR') {
+    } else if (user1.userType === "DONOR") {
       // user1 is donor, user2 is parent
       donorId = userId1;
       parentId = userId2;
-    } else if (user2.userType === 'DONOR') {
+    } else if (user2.userType === "DONOR") {
       // user2 is donor, user1 is parent
       donorId = userId2;
       parentId = userId1;
@@ -87,7 +87,8 @@ export class ChatService {
 
     // Determine the OTHER user relative to the requester (userId1)
     // The other user is the one who is NOT userId1
-    const otherUserId = userId1 === session.parentId ? session.donorId : session.parentId;
+    const otherUserId =
+      userId1 === session.parentId ? session.donorId : session.parentId;
 
     const otherUser = await this.prisma.user.findUnique({
       where: { id: otherUserId },
@@ -187,7 +188,7 @@ export class ChatService {
           unreadCount,
           lastMessage: session.messages[0] || null,
         };
-      })
+      }),
     );
 
     return {
@@ -206,7 +207,7 @@ export class ChatService {
     sessionId: number,
     userId: number,
     page: number = 1,
-    limit: number = 50
+    limit: number = 50,
   ) {
     // Verify user is part of this session
     const session = await this.prisma.chatSession.findUnique({
@@ -219,7 +220,7 @@ export class ChatService {
 
     if (session.parentId !== userId && session.donorId !== userId) {
       throw new ForbiddenException(
-        "You do not have access to this chat session"
+        "You do not have access to this chat session",
       );
     }
 

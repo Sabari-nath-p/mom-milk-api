@@ -1,96 +1,105 @@
-import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
-import { Transporter } from 'nodemailer';
+import { Injectable, Logger } from "@nestjs/common";
+import * as nodemailer from "nodemailer";
+import { Transporter } from "nodemailer";
 
 export interface EmailOptions {
-    to: string;
-    subject: string;
-    text?: string;
-    html?: string;
+  to: string;
+  subject: string;
+  text?: string;
+  html?: string;
 }
 
 @Injectable()
 export class MailService {
-    private readonly logger = new Logger(MailService.name);
-    private transporter: Transporter;
-    private isConfigured: boolean = false;
+  private readonly logger = new Logger(MailService.name);
+  private transporter: Transporter;
+  private isConfigured: boolean = false;
 
-    constructor() {
-        this.initializeTransporter();
+  constructor() {
+    this.initializeTransporter();
+  }
+
+  private initializeTransporter() {
+    try {
+      // Check if SMTP configuration is available
+      if (
+        !process.env.SMTP_HOST ||
+        !process.env.SMTP_PORT ||
+        !process.env.SMTP_USER ||
+        !process.env.SMTP_PASS
+      ) {
+        this.logger.warn(
+          "SMTP configuration not found. Email features will be disabled.",
+        );
+        this.isConfigured = false;
+        return;
+      }
+
+      // Create transporter
+      this.transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT),
+        secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+        tls: {
+          // Do not fail on invalid certs
+          rejectUnauthorized: false,
+        },
+      });
+
+      this.isConfigured = true;
+      this.logger.log("SMTP transporter initialized successfully");
+
+      // Verify SMTP connection
+      this.verifyConnection();
+    } catch (error) {
+      this.logger.error("Failed to initialize SMTP transporter:", error);
+      this.isConfigured = false;
+    }
+  }
+
+  private async verifyConnection() {
+    try {
+      await this.transporter.verify();
+      this.logger.log("SMTP connection verified successfully");
+    } catch (error) {
+      this.logger.error("SMTP connection verification failed:", error);
+      this.isConfigured = false;
+    }
+  }
+
+  async sendEmail(options: EmailOptions): Promise<boolean> {
+    if (!this.isConfigured) {
+      this.logger.warn("SMTP not configured, skipping email send");
+      return false;
     }
 
-    private initializeTransporter() {
-        try {
-            // Check if SMTP configuration is available
-            if (!process.env.SMTP_HOST || !process.env.SMTP_PORT || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-                this.logger.warn('SMTP configuration not found. Email features will be disabled.');
-                this.isConfigured = false;
-                return;
-            }
+    try {
+      const mailOptions = {
+        from: `"MomsMilk App" <${process.env.SMTP_USER}>`,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+      };
 
-            // Create transporter
-            this.transporter = nodemailer.createTransport({
-                host: process.env.SMTP_HOST,
-                port: parseInt(process.env.SMTP_PORT),
-                secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-                auth: {
-                    user: process.env.SMTP_USER,
-                    pass: process.env.SMTP_PASS,
-                },
-                tls: {
-                    // Do not fail on invalid certs
-                    rejectUnauthorized: false,
-                },
-            });
-
-            this.isConfigured = true;
-            this.logger.log('SMTP transporter initialized successfully');
-
-            // Verify SMTP connection
-            this.verifyConnection();
-        } catch (error) {
-            this.logger.error('Failed to initialize SMTP transporter:', error);
-            this.isConfigured = false;
-        }
+      const info = await this.transporter.sendMail(mailOptions);
+      this.logger.log(
+        `Email sent successfully to ${options.to}: ${info.messageId}`,
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to send email to ${options.to}:`, error);
+      return false;
     }
+  }
 
-    private async verifyConnection() {
-        try {
-            await this.transporter.verify();
-            this.logger.log('SMTP connection verified successfully');
-        } catch (error) {
-            this.logger.error('SMTP connection verification failed:', error);
-            this.isConfigured = false;
-        }
-    }
-
-    async sendEmail(options: EmailOptions): Promise<boolean> {
-        if (!this.isConfigured) {
-            this.logger.warn('SMTP not configured, skipping email send');
-            return false;
-        }
-
-        try {
-            const mailOptions = {
-                from: `"MomsMilk App" <${process.env.SMTP_USER}>`,
-                to: options.to,
-                subject: options.subject,
-                text: options.text,
-                html: options.html,
-            };
-
-            const info = await this.transporter.sendMail(mailOptions);
-            this.logger.log(`Email sent successfully to ${options.to}: ${info.messageId}`);
-            return true;
-        } catch (error) {
-            this.logger.error(`Failed to send email to ${options.to}:`, error);
-            return false;
-        }
-    }
-
-    async sendOtpEmail(email: string, otp: string): Promise<boolean> {
-        const subject = 'Your OTP for MomsMilk App';
-        const html = `
+  async sendOtpEmail(email: string, otp: string): Promise<boolean> {
+    const subject = "Your OTP for MomsMilk App";
+    const html = `
             <!DOCTYPE html>
             <html>
             <head>
@@ -125,41 +134,42 @@ export class MailService {
             </html>
         `;
 
-        const text = `Your OTP for MomsMilk App is: ${otp}\n\nThis OTP is valid for 5 minutes.\n\nIf you didn't request this OTP, please ignore this email.`;
+    const text = `Your OTP for MomsMilk App is: ${otp}\n\nThis OTP is valid for 5 minutes.\n\nIf you didn't request this OTP, please ignore this email.`;
 
-        return this.sendEmail({ to: email, subject, html, text });
+    return this.sendEmail({ to: email, subject, html, text });
+  }
+
+  async sendRequestNotificationEmail(
+    donorEmail: string,
+    donorName: string,
+    requesterName: string,
+    requestTitle: string,
+    requestDescription: string,
+    quantity: number,
+    urgency: string,
+    requesterFacebookLink?: string,
+    requesterInstagramLink?: string,
+  ): Promise<boolean> {
+    const subject = "🍼 New Milk Request Received";
+
+    // Build social links HTML if available
+    let socialLinksHtml = "";
+    if (requesterFacebookLink || requesterInstagramLink) {
+      socialLinksHtml =
+        '<div class="detail-row"><span class="label">Requester Social:</span> ';
+      if (requesterFacebookLink) {
+        socialLinksHtml += `<a href="${requesterFacebookLink}" target="_blank">Facebook</a>`;
+      }
+      if (requesterFacebookLink && requesterInstagramLink) {
+        socialLinksHtml += " | ";
+      }
+      if (requesterInstagramLink) {
+        socialLinksHtml += `<a href="${requesterInstagramLink}" target="_blank">Instagram</a>`;
+      }
+      socialLinksHtml += "</div>";
     }
 
-    async sendRequestNotificationEmail(
-        donorEmail: string,
-        donorName: string,
-        requesterName: string,
-        requestTitle: string,
-        requestDescription: string,
-        quantity: number,
-        urgency: string,
-        requesterFacebookLink?: string,
-        requesterInstagramLink?: string
-    ): Promise<boolean> {
-        const subject = '🍼 New Milk Request Received';
-
-        // Build social links HTML if available
-        let socialLinksHtml = '';
-        if (requesterFacebookLink || requesterInstagramLink) {
-            socialLinksHtml = '<div class="detail-row"><span class="label">Requester Social:</span> ';
-            if (requesterFacebookLink) {
-                socialLinksHtml += `<a href="${requesterFacebookLink}" target="_blank">Facebook</a>`;
-            }
-            if (requesterFacebookLink && requesterInstagramLink) {
-                socialLinksHtml += ' | ';
-            }
-            if (requesterInstagramLink) {
-                socialLinksHtml += `<a href="${requesterInstagramLink}" target="_blank">Instagram</a>`;
-            }
-            socialLinksHtml += '</div>';
-        }
-
-        const html = `
+    const html = `
             <!DOCTYPE html>
             <html>
             <head>
@@ -193,7 +203,7 @@ export class MailService {
                                 <span class="label">Request Title:</span> ${requestTitle}
                             </div>
                             <div class="detail-row">
-                                <span class="label">Description:</span> ${requestDescription || 'No description provided'}
+                                <span class="label">Description:</span> ${requestDescription || "No description provided"}
                             </div>
                             <div class="detail-row">
                                 <span class="label">Quantity:</span> ${quantity} ml
@@ -215,40 +225,49 @@ export class MailService {
             </html>
         `;
 
-        let socialLinksText = '';
-        if (requesterFacebookLink || requesterInstagramLink) {
-            socialLinksText = '\nRequester Social:';
-            if (requesterFacebookLink) socialLinksText += `\nFacebook: ${requesterFacebookLink}`;
-            if (requesterInstagramLink) socialLinksText += `\nInstagram: ${requesterInstagramLink}`;
-        }
-
-        const text = `Hello ${donorName},\n\n${requesterName} has sent you a new milk request:\n\nRequest: ${requestTitle}\nDescription: ${requestDescription || 'No description provided'}\nQuantity: ${quantity} ml\nUrgency: ${urgency.toUpperCase()}${socialLinksText}\n\nPlease log in to the MomsMilk App to review and respond to this request.`;
-
-        return this.sendEmail({ to: donorEmail, subject, html, text });
+    let socialLinksText = "";
+    if (requesterFacebookLink || requesterInstagramLink) {
+      socialLinksText = "\nRequester Social:";
+      if (requesterFacebookLink)
+        socialLinksText += `\nFacebook: ${requesterFacebookLink}`;
+      if (requesterInstagramLink)
+        socialLinksText += `\nInstagram: ${requesterInstagramLink}`;
     }
 
-    async sendRequestAcceptedEmail(
-        buyerEmail: string,
-        buyerName: string,
-        donorName: string,
-        donorPhone: string,
-        requestTitle: string,
-        donorFacebookLink?: string,
-        donorInstagramLink?: string
-    ): Promise<boolean> {
-        const subject = '✅ Your Request Has Been Accepted!';
+    const text = `Hello ${donorName},\n\n${requesterName} has sent you a new milk request:\n\nRequest: ${requestTitle}\nDescription: ${requestDescription || "No description provided"}\nQuantity: ${quantity} ml\nUrgency: ${urgency.toUpperCase()}${socialLinksText}\n\nPlease log in to the MomsMilk App to review and respond to this request.`;
 
-        // Build social links HTML if available
-        let socialLinksHtml = '';
-        if (donorFacebookLink || donorInstagramLink) {
-            socialLinksHtml = '<div class="detail-row"><span class="label">Connect:</span> ';
-            const links = [];
-            if (donorFacebookLink) links.push(`<a href="${donorFacebookLink}" target="_blank">Facebook</a>`);
-            if (donorInstagramLink) links.push(`<a href="${donorInstagramLink}" target="_blank">Instagram</a>`);
-            socialLinksHtml += links.join(' | ') + '</div>';
-        }
+    return this.sendEmail({ to: donorEmail, subject, html, text });
+  }
 
-        const html = `
+  async sendRequestAcceptedEmail(
+    buyerEmail: string,
+    buyerName: string,
+    donorName: string,
+    donorPhone: string,
+    requestTitle: string,
+    donorFacebookLink?: string,
+    donorInstagramLink?: string,
+  ): Promise<boolean> {
+    const subject = "✅ Your Request Has Been Accepted!";
+
+    // Build social links HTML if available
+    let socialLinksHtml = "";
+    if (donorFacebookLink || donorInstagramLink) {
+      socialLinksHtml =
+        '<div class="detail-row"><span class="label">Connect:</span> ';
+      const links = [];
+      if (donorFacebookLink)
+        links.push(
+          `<a href="${donorFacebookLink}" target="_blank">Facebook</a>`,
+        );
+      if (donorInstagramLink)
+        links.push(
+          `<a href="${donorInstagramLink}" target="_blank">Instagram</a>`,
+        );
+      socialLinksHtml += links.join(" | ") + "</div>";
+    }
+
+    const html = `
             <!DOCTYPE html>
             <html>
             <head>
@@ -298,51 +317,53 @@ export class MailService {
             </html>
         `;
 
-        let socialLinksText = '';
-        if (donorFacebookLink || donorInstagramLink) {
-            socialLinksText = '\n\nConnect with donor:';
-            if (donorFacebookLink) socialLinksText += `\nFacebook: ${donorFacebookLink}`;
-            if (donorInstagramLink) socialLinksText += `\nInstagram: ${donorInstagramLink}`;
-        }
-
-        const text = `Great News, ${buyerName}!\n\n${donorName} has accepted your milk request: "${requestTitle}"\n\nDonor Contact Information:\nName: ${donorName}\nPhone: ${donorPhone}${socialLinksText}\n\nYou can now contact the donor directly to arrange the pickup or delivery.\n\nPlease log in to the MomsMilk App for more details.`;
-
-        return this.sendEmail({ to: buyerEmail, subject, html, text });
+    let socialLinksText = "";
+    if (donorFacebookLink || donorInstagramLink) {
+      socialLinksText = "\n\nConnect with donor:";
+      if (donorFacebookLink)
+        socialLinksText += `\nFacebook: ${donorFacebookLink}`;
+      if (donorInstagramLink)
+        socialLinksText += `\nInstagram: ${donorInstagramLink}`;
     }
 
-    async sendAvailabilityNotificationEmail(
-        buyerEmail: string,
-        buyerName: string,
-        donorName: string,
-        requestTitle: string,
-        donorFacebookLink?: string,
-        donorInstagramLink?: string
-    ): Promise<boolean> {
-        const subject = '💝 Donor is Now Available!';
+    const text = `Great News, ${buyerName}!\n\n${donorName} has accepted your milk request: "${requestTitle}"\n\nDonor Contact Information:\nName: ${donorName}\nPhone: ${donorPhone}${socialLinksText}\n\nYou can now contact the donor directly to arrange the pickup or delivery.\n\nPlease log in to the MomsMilk App for more details.`;
 
-        // Build contact section if any contact info is provided
-        let contactHtml = '';
-        let contactText = '';
-        if (donorFacebookLink || donorInstagramLink) {
-            contactHtml = `
+    return this.sendEmail({ to: buyerEmail, subject, html, text });
+  }
+
+  async sendAvailabilityNotificationEmail(
+    buyerEmail: string,
+    buyerName: string,
+    donorName: string,
+    requestTitle: string,
+    donorFacebookLink?: string,
+    donorInstagramLink?: string,
+  ): Promise<boolean> {
+    const subject = "💝 Donor is Now Available!";
+
+    // Build contact section if any contact info is provided
+    let contactHtml = "";
+    let contactText = "";
+    if (donorFacebookLink || donorInstagramLink) {
+      contactHtml = `
                 <div style="background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0;">
                     <h3 style="margin-top: 0; color: #FF69B4;">Connect with ${donorName}:</h3>
             `;
-            contactText = `\n\nConnect with ${donorName}:\n`;
+      contactText = `\n\nConnect with ${donorName}:\n`;
 
-            if (donorFacebookLink) {
-                contactHtml += `<p style="margin: 10px 0;">📘 <strong>Facebook:</strong> <a href="${donorFacebookLink}" style="color: #FF69B4;" target="_blank">View Profile</a></p>`;
-                contactText += `Facebook: ${donorFacebookLink}\n`;
-            }
-            if (donorInstagramLink) {
-                contactHtml += `<p style="margin: 10px 0;">📸 <strong>Instagram:</strong> <a href="${donorInstagramLink}" style="color: #FF69B4;" target="_blank">View Profile</a></p>`;
-                contactText += `Instagram: ${donorInstagramLink}\n`;
-            }
+      if (donorFacebookLink) {
+        contactHtml += `<p style="margin: 10px 0;">📘 <strong>Facebook:</strong> <a href="${donorFacebookLink}" style="color: #FF69B4;" target="_blank">View Profile</a></p>`;
+        contactText += `Facebook: ${donorFacebookLink}\n`;
+      }
+      if (donorInstagramLink) {
+        contactHtml += `<p style="margin: 10px 0;">📸 <strong>Instagram:</strong> <a href="${donorInstagramLink}" style="color: #FF69B4;" target="_blank">View Profile</a></p>`;
+        contactText += `Instagram: ${donorInstagramLink}\n`;
+      }
 
-            contactHtml += `</div>`;
-        }
+      contactHtml += `</div>`;
+    }
 
-        const html = `
+    const html = `
             <!DOCTYPE html>
             <html>
             <head>
@@ -366,7 +387,7 @@ export class MailService {
                             <p><strong>${donorName}</strong> is now available and might be able to help with your request: <strong>"${requestTitle}"</strong></p>
                         </div>
                         ${contactHtml}
-                        <p>This is a great opportunity to reach out to the donor${contactHtml ? '' : ' through the app'}.</p>
+                        <p>This is a great opportunity to reach out to the donor${contactHtml ? "" : " through the app"}.</p>
                         <p>Please log in to the MomsMilk App to check the latest status and connect with the donor.</p>
                         <div class="footer">
                             <p>This is an automated message, please do not reply.</p>
@@ -378,16 +399,19 @@ export class MailService {
             </html>
         `;
 
-        const text = `Hello ${buyerName},\n\n${donorName} is now available and might be able to help with your request: "${requestTitle}"${contactText}\n\nThis is a great opportunity to reach out to the donor${contactText ? '' : ' through the app'}.\n\nPlease log in to the MomsMilk App to check the latest status and connect with the donor.`;
+    const text = `Hello ${buyerName},\n\n${donorName} is now available and might be able to help with your request: "${requestTitle}"${contactText}\n\nThis is a great opportunity to reach out to the donor${contactText ? "" : " through the app"}.\n\nPlease log in to the MomsMilk App to check the latest status and connect with the donor.`;
 
-        return this.sendEmail({ to: buyerEmail, subject, html, text });
-    }
+    return this.sendEmail({ to: buyerEmail, subject, html, text });
+  }
 
-    async sendZipcodeNotFoundEmail(zipcode: string, userEmail: string): Promise<boolean> {
-        const adminEmail = 'sabarinath5604@gmail.com';
-        const subject = '⚠️ Missing Zipcode Report';
+  async sendZipcodeNotFoundEmail(
+    zipcode: string,
+    userEmail: string,
+  ): Promise<boolean> {
+    const adminEmail = "sabarinath5604@gmail.com";
+    const subject = "⚠️ Missing Zipcode Report";
 
-        const html = `
+    const html = `
             <!DOCTYPE html>
             <html>
             <head>
@@ -433,8 +457,8 @@ export class MailService {
             </html>
         `;
 
-        const text = `⚠️ Missing Zipcode Report\n\nA user attempted to register with a zipcode that was not found.\n\nMissing Zipcode: ${zipcode}\nUser Email: ${userEmail}\nTime: ${new Date().toLocaleString()}\n\nPlease verify this zipcode and add it to the database manually if valid.`;
+    const text = `⚠️ Missing Zipcode Report\n\nA user attempted to register with a zipcode that was not found.\n\nMissing Zipcode: ${zipcode}\nUser Email: ${userEmail}\nTime: ${new Date().toLocaleString()}\n\nPlease verify this zipcode and add it to the database manually if valid.`;
 
-        return this.sendEmail({ to: adminEmail, subject, html, text });
-    }
+    return this.sendEmail({ to: adminEmail, subject, html, text });
+  }
 }

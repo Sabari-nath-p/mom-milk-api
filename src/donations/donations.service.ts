@@ -129,7 +129,7 @@ export class DonationsService {
       event = this.stripe.webhooks.constructEvent(
         rawBody,
         signature,
-        process.env.STRIPE_WEBHOOK_SECRET
+        process.env.STRIPE_WEBHOOK_SECRET,
       );
 
       console.log(`🔍 Event Verified: ${event.id}`);

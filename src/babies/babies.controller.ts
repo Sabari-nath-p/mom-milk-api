@@ -36,7 +36,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 export class BabiesController {
   constructor(
     private readonly babiesService: BabiesService,
-    private readonly analyticsService: BabiesAnalyticsService
+    private readonly analyticsService: BabiesAnalyticsService,
   ) {}
 
   @Post()
@@ -134,7 +134,7 @@ export class BabiesController {
   })
   findByAgeRange(
     @Query("minMonths", ParseIntPipe) minMonths: number,
-    @Query("maxMonths", ParseIntPipe) maxMonths: number
+    @Query("maxMonths", ParseIntPipe) maxMonths: number,
   ) {
     return this.babiesService.findByAgeRange(minMonths, maxMonths);
   }
@@ -158,7 +158,7 @@ export class BabiesController {
   @ApiResponse({ status: 404, description: "Baby profile not found" })
   update(
     @Param("id", ParseIntPipe) id: number,
-    @Body() updateBabyDto: UpdateBabyDto
+    @Body() updateBabyDto: UpdateBabyDto,
   ) {
     return this.babiesService.update(id, updateBabyDto);
   }
@@ -199,7 +199,7 @@ export class BabiesController {
   @ApiResponse({ status: 404, description: "Baby not found" })
   @ApiResponse({ status: 400, description: "Invalid date range or baby ID" })
   async getBabyAnalytics(
-    @Body() analyticsDto: BabyAnalyticsRequestDto
+    @Body() analyticsDto: BabyAnalyticsRequestDto,
   ): Promise<BabyAnalyticsResponseDto> {
     return this.analyticsService.getBabyAnalytics(analyticsDto);
   }
