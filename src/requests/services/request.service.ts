@@ -824,16 +824,12 @@ export class RequestService {
     // Determine if US-based by checking if phone number starts with +1
     const isUSBased = searcher.phone?.startsWith("+1") || false;
 
-    // Get reference zipcode coordinates once (optimization: single query)
+    // Get reference zipcode coordinates once.
+    // Important: DB-only lookup (no Google Geocoding API fallback) per buyer-search requirements.
     const referenceCoords =
-      await this.geolocationService.getZipCodeCoordinates(referenceZipcode);
-
-    if (!referenceCoords) {
-      return {
-        data: [],
-        pagination: this.createPaginationResponse(page, limit, 0),
-      };
-    }
+      await this.geolocationService.getZipCodeCoordinates(referenceZipcode, {
+        allowExternalLookup: false,
+      });
 
     // Base where clause for all buyers
     const baseWhereClause: any = {
@@ -903,7 +899,7 @@ export class RequestService {
       const zipCodeData = zipCodeMap.get(buyer.zipcode);
 
       let distance: number | null = null;
-      if (zipCodeData) {
+      if (zipCodeData && referenceCoords) {
         // Calculate distance directly without additional database call
         distance = this.geolocationService.calculateDistance(
           referenceCoords.latitude,
