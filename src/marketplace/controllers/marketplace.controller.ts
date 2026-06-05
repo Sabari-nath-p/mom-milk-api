@@ -56,8 +56,12 @@ export class MarketplaceController {
   @Get("listings/:id")
   @ApiOperation({ summary: "Get marketplace listing detail" })
   @ApiParam({ name: "id", type: Number })
-  getOne(@Param("id", ParseIntPipe) id: number) {
-    return this.marketplaceService.getOne(id);
+  @ApiQuery({ name: "zipcode", required: false, description: "Your zipcode to compute distance" })
+  getOne(
+    @Param("id", ParseIntPipe) id: number,
+    @Query("zipcode") zipcode?: string,
+  ) {
+    return this.marketplaceService.getOne(id, zipcode);
   }
 
   // ─── Authenticated: Create & Manage own listings ──────────────────────────

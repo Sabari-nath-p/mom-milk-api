@@ -14,8 +14,59 @@ import {
 } from "../dto/listing.dto";
 import { MarketplaceListingStatus } from "@prisma/client";
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Safely JSON-parse a string; returns the fallback on failure. */
+function tryParseJson<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+/** Deserialize JSON-stored array fields on a raw listing from Prisma. */
+function deserializeListingArrays(listing: any) {
+  if (!listing) return listing;
+  return {
+    ...listing,
+    materials: tryParseJson<string[]>(listing.materials, []),
+    colors: tryParseJson<string[]>(listing.colors, []),
+    boxContains: tryParseJson<string[]>(listing.boxContains, []),
+  };
+}
+
+/** Attach poster meta (lastWsConnectedAt, totalListingsCount) and optional distance. */
+function enrichListing(listing: any, distanceKm?: number | null) {
+  const deserialized = deserializeListingArrays(listing);
+  const user = deserialized.user ?? {};
+
+  return {
+    ...deserialized,
+    user: {
+      ...user,
+      totalListingsCount: user._count?.marketplaceListings ?? null,
+      _count: undefined,
+    },
+    ...(distanceKm !== undefined && distanceKm !== null
+      ? { distanceKm }
+      : {}),
+  };
+}
+
+// ─── Prisma include ───────────────────────────────────────────────────────────
+
 const LISTING_INCLUDE = {
-  user: { select: { id: true, name: true, zipcode: true } },
+  user: {
+    select: {
+      id: true,
+      name: true,
+      zipcode: true,
+      lastWsConnectedAt: true,
+      _count: { select: { marketplaceListings: true } },
+    },
+  },
   images: { orderBy: { sortOrder: "asc" as const } },
   _count: { select: { savedBy: true } },
 };
@@ -74,8 +125,23 @@ export class MarketplaceService {
     }[];
   }
 
+  /** Serialize array fields to JSON strings for MySQL storage. */
+  private serializeArrayFields(dto: Partial<CreateListingDto>) {
+    return {
+      ...(dto.materials !== undefined && {
+        materials: JSON.stringify(dto.materials),
+      }),
+      ...(dto.colors !== undefined && {
+        colors: JSON.stringify(dto.colors),
+      }),
+      ...(dto.boxContains !== undefined && {
+        boxContains: JSON.stringify(dto.boxContains),
+      }),
+    };
+  }
+
   async create(userId: number, dto: CreateListingDto) {
-    const { images, ...listingData } = dto;
+    const { images, materials, colors, boxContains, ...listingData } = dto;
     const normalizedImages = this.normalizeImagesInput(images);
 
     // Auto-resolve placeName from ZipCode table if not provided
@@ -85,15 +151,22 @@ export class MarketplaceService {
       placeName = zipData?.placeName ?? dto.zipcode;
     }
 
-    return this.prisma.marketplaceListing.create({
+    const raw = await this.prisma.marketplaceListing.create({
       data: {
         userId,
         ...listingData,
         placeName,
+        // Serialize array fields
+        ...(materials !== undefined && { materials: JSON.stringify(materials) }),
+        ...(colors !== undefined && { colors: JSON.stringify(colors) }),
+        ...(boxContains !== undefined && {
+          boxContains: JSON.stringify(boxContains),
+        }),
         images: normalizedImages ? { create: normalizedImages } : undefined,
       },
       include: LISTING_INCLUDE,
     });
+    return enrichListing(raw);
   }
 
   async update(userId: number, listingId: number, dto: UpdateListingDto) {
@@ -107,7 +180,7 @@ export class MarketplaceService {
       throw new BadRequestException("Sold listings cannot be edited");
     }
 
-    const { images, ...listingData } = dto;
+    const { images, materials, colors, boxContains, ...listingData } = dto;
     const normalizedImages = this.normalizeImagesInput(images);
 
     // Auto-resolve placeName if zipcode is updated and placeName not provided
@@ -127,7 +200,7 @@ export class MarketplaceService {
           }
         : undefined;
 
-    return this.prisma.marketplaceListing.update({
+    const raw = await this.prisma.marketplaceListing.update({
       where: { id: listingId },
       data: {
         ...listingData,
@@ -135,9 +208,16 @@ export class MarketplaceService {
           ? { placeName: resolvedPlaceName }
           : {}),
         ...(imagesUpdate !== undefined ? { images: imagesUpdate } : {}),
+        // Serialize array fields only when explicitly provided
+        ...(materials !== undefined && { materials: JSON.stringify(materials) }),
+        ...(colors !== undefined && { colors: JSON.stringify(colors) }),
+        ...(boxContains !== undefined && {
+          boxContains: JSON.stringify(boxContains),
+        }),
       },
       include: LISTING_INCLUDE,
     });
+    return enrichListing(raw);
   }
 
   async delete(userId: number, listingId: number) {
@@ -145,7 +225,7 @@ export class MarketplaceService {
     return this.prisma.marketplaceListing.delete({ where: { id: listingId } });
   }
 
-  async getOne(listingId: number) {
+  async getOne(listingId: number, queryZipcode?: string) {
     const listing = await this.prisma.marketplaceListing.findUnique({
       where: { id: listingId },
       include: {
@@ -156,7 +236,14 @@ export class MarketplaceService {
     if (!listing || listing.status === MarketplaceListingStatus.REMOVED) {
       throw new NotFoundException("Listing not found");
     }
-    return listing;
+
+    // Compute straight-line distance if a query zipcode is provided
+    let distanceKm: number | null = null;
+    if (queryZipcode && listing.zipcode) {
+      distanceKm = await this.computeDistance(queryZipcode, listing.zipcode);
+    }
+
+    return enrichListing(listing, distanceKm);
   }
 
   async browse(query: ListingQueryDto) {
@@ -177,16 +264,28 @@ export class MarketplaceService {
       skip,
     } = this.normalizePagination(page, limit);
 
-    // Geo filter
+    // Geo filter – also build a lookup map of zipcode → coordinates for distance
     let zipcodeFilter: string[] | undefined;
+    let zipCoordMap: Map<string, { lat: number; lon: number }> = new Map();
+    let queryCoords: { lat: number; lon: number } | null = null;
+
     if (zipcode) {
-      const nearby = await this.geoService.findNearbyZipCodes(
-        zipcode,
-        radiusKm,
-      );
+      const nearby = await this.geoService.findNearbyZipCodes(zipcode, radiusKm);
       zipcodeFilter = nearby.map((z) => z.zipcode);
       if (zipcodeFilter.length === 0)
         return this.emptyPage(safePage, safeLimit);
+
+      // Build coord map for distance calculation
+      for (const z of nearby) {
+        zipCoordMap.set(z.zipcode, { lat: z.latitude, lon: z.longitude });
+      }
+      // Get query zipcode coords for distance
+      const qc = await this.geoService.getZipCodeCoordinates(zipcode, {
+        allowExternalLookup: false,
+      });
+      if (qc) {
+        queryCoords = { lat: qc.latitude, lon: qc.longitude };
+      }
     }
 
     const where: any = {
@@ -221,8 +320,25 @@ export class MarketplaceService {
       this.prisma.marketplaceListing.count({ where }),
     ]);
 
+    // Attach distance & deserialize array fields
+    const enriched = listings.map((listing) => {
+      let distanceKm: number | null = null;
+      if (queryCoords && listing.zipcode) {
+        const listingCoords = zipCoordMap.get(listing.zipcode);
+        if (listingCoords) {
+          distanceKm = this.geoService.calculateDistance(
+            queryCoords.lat,
+            queryCoords.lon,
+            listingCoords.lat,
+            listingCoords.lon,
+          );
+        }
+      }
+      return enrichListing(listing, distanceKm);
+    });
+
     return {
-      data: listings,
+      data: enriched,
       pagination: {
         currentPage: safePage,
         totalPages: Math.ceil(total / safeLimit),
@@ -272,7 +388,7 @@ export class MarketplaceService {
     ]);
 
     return {
-      data: listings,
+      data: listings.map((l) => enrichListing(l)),
       pagination: {
         currentPage: safePage,
         totalPages: Math.ceil(total / safeLimit),
@@ -341,7 +457,7 @@ export class MarketplaceService {
     ]);
 
     return {
-      data: saved.map((s) => s.listing),
+      data: saved.map((s) => enrichListing(s.listing)),
       pagination: {
         currentPage: safePage,
         totalPages: Math.ceil(total / safeLimit),
@@ -420,7 +536,7 @@ export class MarketplaceService {
     ]);
 
     return {
-      data: listings,
+      data: listings.map((l) => enrichListing(l)),
       pagination: {
         currentPage: safePage,
         totalPages: Math.ceil(total / safeLimit),
@@ -440,6 +556,35 @@ export class MarketplaceService {
     if (listing.userId !== userId)
       throw new ForbiddenException("You do not own this listing");
     return listing;
+  }
+
+  /**
+   * Compute straight-line (Haversine) distance in km between two zipcodes
+   * using the ZipCode table. Returns null if either zipcode is not found.
+   */
+  private async computeDistance(
+    fromZipcode: string,
+    toZipcode: string,
+  ): Promise<number | null> {
+    if (!fromZipcode || !toZipcode || fromZipcode === toZipcode) return null;
+
+    const [from, to] = await Promise.all([
+      this.geoService.getZipCodeCoordinates(fromZipcode, {
+        allowExternalLookup: false,
+      }),
+      this.geoService.getZipCodeCoordinates(toZipcode, {
+        allowExternalLookup: false,
+      }),
+    ]);
+
+    if (!from || !to) return null;
+
+    return this.geoService.calculateDistance(
+      from.latitude,
+      from.longitude,
+      to.latitude,
+      to.longitude,
+    );
   }
 
   private emptyPage(page: number, limit: number) {

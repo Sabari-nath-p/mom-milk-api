@@ -63,6 +63,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Join user to their personal room
       client.join(`user:${userId}`);
 
+      // Record last WebSocket connected timestamp
+      await this.chatService["prisma"].user.update({
+        where: { id: userId },
+        data: { lastWsConnectedAt: new Date() },
+      });
+
       console.log(`Client connected: ${client.id}, User: ${userId}`);
 
       // Load and send any unread messages to the user

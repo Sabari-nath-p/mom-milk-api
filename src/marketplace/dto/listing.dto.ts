@@ -9,6 +9,7 @@ import {
   IsInt,
   ValidateNested,
   IsBoolean,
+  IsDateString,
 } from "class-validator";
 import { Transform, Type } from "class-transformer";
 import {
@@ -84,6 +85,65 @@ export class CreateListingDto {
   @ValidateNested({ each: true })
   @Type(() => MarketplaceImageDto)
   images?: MarketplaceImageDto[];
+
+  // ─── Optional product detail fields ────────────────────────────────────────
+
+  @ApiPropertyOptional({ example: 2999, description: "Original / retail price" })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  originPrice?: number;
+
+  @ApiPropertyOptional({
+    example: "2024-01-15",
+    description: "Date the item was originally purchased (ISO 8601 date)",
+  })
+  @IsOptional()
+  @IsDateString()
+  purchasedOn?: string;
+
+  @ApiPropertyOptional({ example: "Fisher-Price", description: "Brand name" })
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
+  @ApiPropertyOptional({
+    example: ["Wood", "Cotton"],
+    description: "List of materials",
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  materials?: string[];
+
+  @ApiPropertyOptional({
+    example: ["Red", "Blue"],
+    description: "Available colors",
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  colors?: string[];
+
+  @ApiPropertyOptional({
+    example: "60cm x 40cm x 35cm",
+    description: "Item dimensions",
+  })
+  @IsOptional()
+  @IsString()
+  dimensions?: string;
+
+  @ApiPropertyOptional({
+    example: ["Cradle", "Mattress", "Mosquito Net"],
+    description: "What is included in the box / package",
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  boxContains?: string[];
 }
 
 export class UpdateListingDto extends PartialType(CreateListingDto) {}

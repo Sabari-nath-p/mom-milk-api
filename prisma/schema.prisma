@@ -162,6 +162,9 @@ model User {
   marketplaceListings   MarketplaceListing[]
   savedListings         MarketplaceSavedListing[]
 
+  // WebSocket tracking
+  lastWsConnectedAt DateTime?
+
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   Donation  Donation[]
@@ -698,6 +701,15 @@ model MarketplaceListing {
   condition   MarketplaceCondition
   zipcode     String                   // seller location for geo filtering
   placeName   String?                  // human-readable location
+
+  // Optional product detail fields
+  originPrice Float?                   // original/retail price
+  purchasedOn DateTime?                // date item was originally purchased
+  brand       String?                  // brand name
+  materials   String?                  // JSON array of strings e.g. '["Wood","Cotton"]'
+  colors      String?                  // JSON array of strings e.g. '["Red","Blue"]'
+  dimensions  String?                  // e.g. "30cm x 20cm x 15cm"
+  boxContains String?                  // JSON array of strings e.g. '["Cradle","Mattress"]'
 
   status      MarketplaceListingStatus @default(ACTIVE)
 
