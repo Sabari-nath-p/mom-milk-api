@@ -49,9 +49,8 @@ function enrichListing(listing: any, distanceKm?: number | null) {
       totalListingsCount: user._count?.marketplaceListings ?? null,
       _count: undefined,
     },
-    ...(distanceKm !== undefined && distanceKm !== null
-      ? { distanceKm }
-      : {}),
+    // Always include distanceKm; null when no zipcode was queried or coords not found
+    distanceKm: distanceKm !== undefined ? distanceKm : null,
   };
 }
 
