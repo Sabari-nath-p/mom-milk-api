@@ -252,11 +252,12 @@ export class MarketplaceService {
       category,
       condition,
       zipcode,
-      radiusKm = 50,
+      radiusKm,
       minPrice,
       maxPrice,
       page = 1,
       limit = 20,
+      sortBy = "newest",
     } = query;
     const {
       page: safePage,
@@ -264,30 +265,51 @@ export class MarketplaceService {
       skip,
     } = this.normalizePagination(page, limit);
 
-    // Geo filter – also build a lookup map of zipcode → coordinates for distance
+    // ── Geo setup ──────────────────────────────────────────────────────────────
+    // zipcodeFilter: only set when zipcode + radiusKm are both provided
     let zipcodeFilter: string[] | undefined;
+    // Map of zipcode → coords for all known zipcodes (used for distance calc)
     let zipCoordMap: Map<string, { lat: number; lon: number }> = new Map();
     let queryCoords: { lat: number; lon: number } | null = null;
 
     if (zipcode) {
-      const nearby = await this.geoService.findNearbyZipCodes(zipcode, radiusKm);
-      zipcodeFilter = nearby.map((z) => z.zipcode);
-      if (zipcodeFilter.length === 0)
-        return this.emptyPage(safePage, safeLimit);
-
-      // Build coord map for distance calculation
-      for (const z of nearby) {
-        zipCoordMap.set(z.zipcode, { lat: z.latitude, lon: z.longitude });
-      }
-      // Get query zipcode coords for distance
       const qc = await this.geoService.getZipCodeCoordinates(zipcode, {
         allowExternalLookup: false,
       });
       if (qc) {
         queryCoords = { lat: qc.latitude, lon: qc.longitude };
       }
+
+      // Only apply radius filter when radiusKm is explicitly supplied
+      if (radiusKm !== undefined) {
+        const nearby = await this.geoService.findNearbyZipCodes(
+          zipcode,
+          radiusKm,
+        );
+        zipcodeFilter = nearby.map((z) => z.zipcode);
+        if (zipcodeFilter.length === 0)
+          return this.emptyPage(safePage, safeLimit);
+        for (const z of nearby) {
+          zipCoordMap.set(z.zipcode, { lat: z.latitude, lon: z.longitude });
+        }
+      } else {
+        // No radius filter – load ALL zipcodes for distance computation
+        const allZips = await this.prisma.zipCode.findMany({
+          select: { zipcode: true, latitude: true, longitude: true },
+        });
+        for (const z of allZips) {
+          zipCoordMap.set(z.zipcode, { lat: z.latitude, lon: z.longitude });
+        }
+      }
     }
 
+    // ── DB-level sort (price / newest) ─────────────────────────────────────────
+    // distance_asc is handled in-memory after fetching
+    let dbOrderBy: any = { createdAt: "desc" }; // default: newest
+    if (sortBy === "price_asc") dbOrderBy = { price: "asc" };
+    else if (sortBy === "price_desc") dbOrderBy = { price: "desc" };
+
+    // ── Where clause ──────────────────────────────────────────────────────────
     const where: any = {
       status: MarketplaceListingStatus.ACTIVE,
       ...(category && { category }),
@@ -309,33 +331,63 @@ export class MarketplaceService {
       }),
     };
 
-    const [listings, total] = await Promise.all([
-      this.prisma.marketplaceListing.findMany({
-        where,
-        skip,
-        take: safeLimit,
-        include: LISTING_INCLUDE,
-        orderBy: { createdAt: "desc" },
-      }),
-      this.prisma.marketplaceListing.count({ where }),
-    ]);
+    // ── Fetch from DB ─────────────────────────────────────────────────────────
+    // For distance_asc we must fetch ALL matching rows first, sort in-memory,
+    // then paginate manually.
+    const isDistanceSort = sortBy === "distance_asc";
 
-    // Attach distance & deserialize array fields
-    const enriched = listings.map((listing) => {
+    let listings: any[];
+    let total: number;
+
+    if (isDistanceSort && queryCoords) {
+      // Fetch all (no skip/take) so we can sort by distance then paginate
+      [listings, total] = await Promise.all([
+        this.prisma.marketplaceListing.findMany({
+          where,
+          include: LISTING_INCLUDE,
+          orderBy: { createdAt: "desc" }, // secondary stable sort
+        }),
+        this.prisma.marketplaceListing.count({ where }),
+      ]);
+    } else {
+      [listings, total] = await Promise.all([
+        this.prisma.marketplaceListing.findMany({
+          where,
+          skip,
+          take: safeLimit,
+          include: LISTING_INCLUDE,
+          orderBy: dbOrderBy,
+        }),
+        this.prisma.marketplaceListing.count({ where }),
+      ]);
+    }
+
+    // ── Attach distance & deserialize array fields ────────────────────────────
+    let enriched = listings.map((listing) => {
       let distanceKm: number | null = null;
       if (queryCoords && listing.zipcode) {
-        const listingCoords = zipCoordMap.get(listing.zipcode);
-        if (listingCoords) {
+        const coords = zipCoordMap.get(listing.zipcode);
+        if (coords) {
           distanceKm = this.geoService.calculateDistance(
             queryCoords.lat,
             queryCoords.lon,
-            listingCoords.lat,
-            listingCoords.lon,
+            coords.lat,
+            coords.lon,
           );
         }
       }
       return enrichListing(listing, distanceKm);
     });
+
+    // ── In-memory distance sort + paginate ────────────────────────────────────
+    if (isDistanceSort && queryCoords) {
+      enriched.sort((a, b) => {
+        const da = a.distanceKm ?? Infinity;
+        const db = b.distanceKm ?? Infinity;
+        return da - db;
+      });
+      enriched = enriched.slice(skip, skip + safeLimit);
+    }
 
     return {
       data: enriched,

@@ -178,8 +178,7 @@ export class ListingQueryDto {
   zipcode?: string;
 
   @ApiPropertyOptional({
-    description: "Radius in km (used with zipcode)",
-    default: 50,
+    description: "Radius in km (used with zipcode for filtering). Omit to return all listings.",
   })
   @IsOptional()
   @IsNumber()
@@ -209,4 +208,14 @@ export class ListingQueryDto {
   @IsInt()
   @Type(() => Number)
   limit?: number;
+
+  @ApiPropertyOptional({
+    enum: ["newest", "price_asc", "price_desc", "distance_asc"],
+    description:
+      "Sort order: newest (default), price_asc, price_desc, distance_asc (requires zipcode)",
+    default: "newest",
+  })
+  @IsOptional()
+  @IsString()
+  sortBy?: "newest" | "price_asc" | "price_desc" | "distance_asc";
 }
