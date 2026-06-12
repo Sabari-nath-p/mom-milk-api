@@ -53,6 +53,20 @@ export class MarketplaceController {
     return this.marketplaceService.browse(query);
   }
 
+  @Get("currency")
+  @ApiOperation({
+    summary:
+      "Get currency symbol & code for a given zipcode (based on country in ZipCode table)",
+  })
+  @ApiQuery({
+    name: "zipcode",
+    required: true,
+    description: "Zipcode to resolve currency for (e.g. 600001 → INR ₹)",
+  })
+  getCurrency(@Query("zipcode") zipcode: string) {
+    return this.marketplaceService.getCurrencyByZipcode(zipcode ?? "");
+  }
+
   @Get("listings/:id")
   @ApiOperation({ summary: "Get marketplace listing detail" })
   @ApiParam({ name: "id", type: Number })

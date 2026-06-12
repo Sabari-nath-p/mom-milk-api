@@ -37,8 +37,30 @@ function deserializeListingArrays(listing: any) {
   };
 }
 
-/** Attach poster meta (lastWsConnectedAt, totalListingsCount) and optional distance. */
-function enrichListing(listing: any, distanceKm?: number | null) {
+// ─── Currency helpers ────────────────────────────────────────────────────────
+
+const DEFAULT_CURRENCY = { symbol: "$", code: "USD" };
+
+/** Map a ZipCode table `country` string to a currency descriptor. */
+function currencyFromCountry(country: string | null | undefined): {
+  symbol: string;
+  code: string;
+} {
+  if (!country) return DEFAULT_CURRENCY;
+  const c = country.trim().toLowerCase();
+  if (c === "india" || c === "in") return { symbol: "₹", code: "INR" };
+  if (c === "united states" || c === "us" || c === "usa")
+    return { symbol: "$", code: "USD" };
+  // Extend with more countries here as needed
+  return DEFAULT_CURRENCY;
+}
+
+/** Attach poster meta (lastWsConnectedAt, totalListingsCount), distance, and currency. */
+function enrichListing(
+  listing: any,
+  distanceKm?: number | null,
+  currency?: { symbol: string; code: string },
+) {
   const deserialized = deserializeListingArrays(listing);
   const user = deserialized.user ?? {};
 
@@ -51,6 +73,8 @@ function enrichListing(listing: any, distanceKm?: number | null) {
     },
     // Always include distanceKm; null when no zipcode was queried or coords not found
     distanceKm: distanceKm !== undefined ? distanceKm : null,
+    // Currency based on listing's zipcode country; defaults to USD
+    currency: currency ?? DEFAULT_CURRENCY,
   };
 }
 
@@ -242,7 +266,14 @@ export class MarketplaceService {
       distanceKm = await this.computeDistance(queryZipcode, listing.zipcode);
     }
 
-    return enrichListing(listing, distanceKm);
+    // Resolve currency from listing's zipcode country
+    const zipData = await this.geoService.getZipCodeCoordinates(
+      listing.zipcode,
+      { allowExternalLookup: false },
+    );
+    const currency = currencyFromCountry(zipData?.country);
+
+    return enrichListing(listing, distanceKm, currency);
   }
 
   async browse(query: ListingQueryDto) {
@@ -267,8 +298,11 @@ export class MarketplaceService {
     // ── Geo setup ──────────────────────────────────────────────────────────────
     // zipcodeFilter: only set when zipcode + radiusKm are both provided
     let zipcodeFilter: string[] | undefined;
-    // Map of zipcode → coords for all known zipcodes (used for distance calc)
-    let zipCoordMap: Map<string, { lat: number; lon: number }> = new Map();
+    // Map of zipcode → { lat, lon, country } for all known zipcodes
+    let zipDataMap: Map<
+      string,
+      { lat: number; lon: number; country: string }
+    > = new Map();
     let queryCoords: { lat: number; lon: number } | null = null;
 
     if (zipcode) {
@@ -289,16 +323,36 @@ export class MarketplaceService {
         if (zipcodeFilter.length === 0)
           return this.emptyPage(safePage, safeLimit);
         for (const z of nearby) {
-          zipCoordMap.set(z.zipcode, { lat: z.latitude, lon: z.longitude });
+          zipDataMap.set(z.zipcode, {
+            lat: z.latitude,
+            lon: z.longitude,
+            country: z.country,
+          });
         }
       } else {
         // No radius filter – load ALL zipcodes for distance computation
         const allZips = await this.prisma.zipCode.findMany({
-          select: { zipcode: true, latitude: true, longitude: true },
+          select: { zipcode: true, latitude: true, longitude: true, country: true },
         });
         for (const z of allZips) {
-          zipCoordMap.set(z.zipcode, { lat: z.latitude, lon: z.longitude });
+          zipDataMap.set(z.zipcode, {
+            lat: z.latitude,
+            lon: z.longitude,
+            country: z.country,
+          });
         }
+      }
+    } else {
+      // No query zipcode – still load all zipcodes so we can resolve currency per listing
+      const allZips = await this.prisma.zipCode.findMany({
+        select: { zipcode: true, latitude: true, longitude: true, country: true },
+      });
+      for (const z of allZips) {
+        zipDataMap.set(z.zipcode, {
+          lat: z.latitude,
+          lon: z.longitude,
+          country: z.country,
+        });
       }
     }
 
@@ -361,21 +415,23 @@ export class MarketplaceService {
       ]);
     }
 
-    // ── Attach distance & deserialize array fields ────────────────────────────
+    // ── Attach distance, currency & deserialize array fields ─────────────────
     let enriched = listings.map((listing) => {
       let distanceKm: number | null = null;
       if (queryCoords && listing.zipcode) {
-        const coords = zipCoordMap.get(listing.zipcode);
-        if (coords) {
+        const data = zipDataMap.get(listing.zipcode);
+        if (data) {
           distanceKm = this.geoService.calculateDistance(
             queryCoords.lat,
             queryCoords.lon,
-            coords.lat,
-            coords.lon,
+            data.lat,
+            data.lon,
           );
         }
       }
-      return enrichListing(listing, distanceKm);
+      const zipData = zipDataMap.get(listing.zipcode ?? "");
+      const currency = currencyFromCountry(zipData?.country);
+      return enrichListing(listing, distanceKm, currency);
     });
 
     // ── In-memory distance sort + paginate ────────────────────────────────────
@@ -597,7 +653,41 @@ export class MarketplaceService {
     };
   }
 
+  // ─── Currency ─────────────────────────────────────────────────────────────
+
+  /**
+   * Look up a zipcode in the ZipCode table and return the matching currency.
+   * Falls back to USD when the zipcode is not found.
+   */
+  async getCurrencyByZipcode(zipcode: string): Promise<{
+    zipcode: string;
+    found: boolean;
+    country: string | null;
+    currency: { symbol: string; code: string };
+  }> {
+    const zipData = await this.geoService.getZipCodeCoordinates(zipcode, {
+      allowExternalLookup: false,
+    });
+
+    if (!zipData) {
+      return {
+        zipcode,
+        found: false,
+        country: null,
+        currency: DEFAULT_CURRENCY,
+      };
+    }
+
+    return {
+      zipcode,
+      found: true,
+      country: zipData.country,
+      currency: currencyFromCountry(zipData.country),
+    };
+  }
+
   // ─── Helpers ──────────────────────────────────────────────────────────────
+
 
   private async ensureOwner(userId: number, listingId: number) {
     const listing = await this.prisma.marketplaceListing.findUnique({
