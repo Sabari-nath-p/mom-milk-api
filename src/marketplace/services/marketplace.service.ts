@@ -209,6 +209,10 @@ export class MarketplaceService {
       placeName = zipData?.placeName ?? dto.zipcode;
     }
 
+    if (listingData.isDonation) {
+      listingData.price = 0;
+    }
+
     const raw = await this.prisma.marketplaceListing.create({
       data: {
         userId,
@@ -246,6 +250,12 @@ export class MarketplaceService {
     if (!dto.placeName && dto.zipcode) {
       const zipData = await this.geoService.getZipCodeCoordinates(dto.zipcode);
       resolvedPlaceName = zipData?.placeName ?? dto.zipcode;
+    }
+
+    // Determine final isDonation status to enforce price rules
+    const finalIsDonation = listingData.isDonation !== undefined ? listingData.isDonation : listing.isDonation;
+    if (finalIsDonation) {
+      listingData.price = 0;
     }
 
     const imagesUpdate =

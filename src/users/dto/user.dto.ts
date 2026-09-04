@@ -81,6 +81,15 @@ export class CreateUserDto {
   @IsBoolean()
   @IsOptional()
   ableToShareMedicalRecord?: boolean;
+  @ApiProperty({ example: "https://example.com/photo.jpg", required: false })
+  @IsString()
+  @IsOptional()
+  profilePhoto?: string;
+
+  @ApiProperty({ example: true, required: false })
+  @IsBoolean()
+  @IsOptional()
+  availableForDonation?: boolean;
 }
 
 export class UpdateUserDto {
@@ -140,4 +149,13 @@ export class UpdateUserDto {
   @IsBoolean()
   @IsOptional()
   ableToShareMedicalRecord?: boolean;
+  @ApiProperty({ example: "https://example.com/photo.jpg", required: false })
+  @IsString()
+  @IsOptional()
+  profilePhoto?: string;
+
+  @ApiProperty({ example: true, required: false })
+  @IsBoolean()
+  @IsOptional()
+  availableForDonation?: boolean;
 }

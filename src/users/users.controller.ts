@@ -8,6 +8,7 @@ import {
   Delete,
   ParseIntPipe,
   Query,
+  UseGuards,
 } from "@nestjs/common";
 import {
   ApiTags,
@@ -15,7 +16,9 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiBearerAuth,
 } from "@nestjs/swagger";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { UsersService } from "./users.service";
 import { CreateUserDto, UpdateUserDto, UserType } from "./dto/user.dto";
 
@@ -88,6 +91,17 @@ export class UsersController {
   @ApiResponse({ status: 404, description: "User not found" })
   findByEmail(@Param("email") email: string) {
     return this.usersService.findByEmail(email);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get(":id/profile")
+  @ApiOperation({ summary: "Get user profile with active marketplace listings" })
+  @ApiParam({ name: "id", description: "User ID" })
+  @ApiResponse({ status: 200, description: "User profile found" })
+  @ApiResponse({ status: 404, description: "User not found" })
+  getProfileWithListings(@Param("id", ParseIntPipe) id: number) {
+    return this.usersService.getProfileWithListings(id);
   }
 
   @Get(":id")

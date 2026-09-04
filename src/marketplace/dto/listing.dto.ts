@@ -72,6 +72,11 @@ export class CreateListingDto {
   @IsEnum(MarketplaceCategory)
   category: MarketplaceCategory;
 
+  @ApiPropertyOptional({ example: false, description: "If true, the price will be forced to 0" })
+  @IsOptional()
+  @IsBoolean()
+  isDonation?: boolean;
+
   @ApiProperty({ enum: MarketplaceCondition })
   @IsEnum(MarketplaceCondition)
   condition: MarketplaceCondition;

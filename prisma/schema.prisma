@@ -129,11 +129,13 @@ model User {
 
   // Donor specific fields (optional for other user types)
   description                    String?
+  profilePhoto                   String?
   bloodGroup                     String?
   babyDeliveryDate               DateTime?
   healthStyle                    String? // JSON string array - optional
   ableToShareMedicalRecord       Boolean?  @default(false)
   isAvailable                    Boolean?  @default(true) // For donors - availability status
+  availableForDonation           Boolean?  @default(false)
   lastAvailabilityNotificationAt DateTime? // Track last time availability notification was sent
 
   // Language preference
@@ -713,6 +715,7 @@ model MarketplaceListing {
   dimensions  String?                  // e.g. "30cm x 20cm x 15cm"
   boxContains String?                  // JSON array of strings e.g. '["Cradle","Mattress"]'
 
+  isDonation  Boolean                  @default(false)
   status      MarketplaceListingStatus @default(ACTIVE)
 
   images      MarketplaceImage[]
