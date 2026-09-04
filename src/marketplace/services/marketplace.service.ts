@@ -14,6 +14,8 @@ import {
 } from "../dto/listing.dto";
 import { MarketplaceListingStatus } from "@prisma/client";
 
+import { ChatService } from "../../chat/chat.service";
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /** Safely JSON-parse a string; returns the fallback on failure. */
@@ -99,7 +101,40 @@ export class MarketplaceService {
   constructor(
     private prisma: PrismaService,
     private geoService: GeolocationService,
+    private chatService: ChatService,
   ) {}
+
+  // ─── Purchase / Chat ────────────────────────────────────────────────────────
+  
+  async initiatePurchaseChat(buyerId: number, listingId: number) {
+    const listing = await this.prisma.marketplaceListing.findUnique({
+      where: { id: listingId },
+    });
+
+    if (!listing || listing.status !== MarketplaceListingStatus.ACTIVE) {
+      throw new NotFoundException("Active listing not found");
+    }
+
+    if (listing.userId === buyerId) {
+      throw new BadRequestException("You cannot buy your own listing");
+    }
+
+    const title = listing.title;
+    const qtyStr = listing.quantity ? ` (Quantity: ${listing.quantity} mls)` : "";
+    const content = `Hi, I'm interested in buying your marketplace listing: "${title}"${qtyStr}.`;
+
+    // Send the initial message and create session
+    const message = await this.chatService.sendMessage(buyerId, {
+      recipientId: listing.userId,
+      content,
+    });
+
+    return {
+      success: true,
+      sessionId: message.sessionId,
+      message: "Chat session started",
+    };
+  }
 
   // ─── Listings ─────────────────────────────────────────────────────────────
 

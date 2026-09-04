@@ -109,6 +109,7 @@ enum MarketplaceCategory {
   SAFETY
   BOOKS
   EDUCATIONAL
+  MILK
   OTHER
 }
 
@@ -697,6 +698,7 @@ model MarketplaceListing {
   title       String
   description String?                  @db.Text
   price       Float
+  quantity    Float?                   // in mls (for milk or similar)
   category    MarketplaceCategory
   condition   MarketplaceCondition
   zipcode     String                   // seller location for geo filtering

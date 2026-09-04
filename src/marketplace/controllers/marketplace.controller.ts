@@ -141,6 +141,15 @@ export class MarketplaceController {
     );
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post("listings/:id/buy")
+  @ApiOperation({ summary: "Initiate purchase chat for a listing" })
+  @ApiParam({ name: "id", type: Number })
+  buyListing(@Request() req, @Param("id", ParseIntPipe) id: number) {
+    return this.marketplaceService.initiatePurchaseChat(req.user.id, id);
+  }
+
   // ─── Images ───────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)

@@ -371,15 +371,18 @@ export class RequestService {
       }
     }
 
-    // Automatically create chat session between donor and requester
+    // Automatically send an initial chat message from donor to requester
     try {
-      await this.chatService.getOrCreateSession(donorId, request.requesterId);
+      await this.chatService.sendMessage(donorId, {
+        recipientId: request.requesterId,
+        content: `Hi! I have accepted your milk request: "${request.title}". Let's chat to coordinate details.`,
+      });
       console.log(
-        `Chat session created between donor ${donorId} and requester ${request.requesterId}`,
+        `Initial chat message sent from donor ${donorId} to requester ${request.requesterId}`,
       );
     } catch (error) {
-      console.error("Failed to create chat session:", error);
-      // Don't fail the request if chat session creation fails
+      console.error("Failed to send initial chat message:", error);
+      // Don't fail the request if chat message creation fails
     }
 
     return this.formatRequestResponse(updatedRequest);

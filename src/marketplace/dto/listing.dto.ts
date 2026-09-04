@@ -62,6 +62,12 @@ export class CreateListingDto {
   @IsPositive()
   price: number;
 
+  @ApiPropertyOptional({ example: 500, description: "Quantity in mls (e.g. for milk)" })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  quantity?: number;
+
   @ApiProperty({ enum: MarketplaceCategory })
   @IsEnum(MarketplaceCategory)
   category: MarketplaceCategory;
