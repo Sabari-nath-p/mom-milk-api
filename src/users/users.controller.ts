@@ -104,6 +104,48 @@ export class UsersController {
     return this.usersService.getProfileWithListings(id);
   }
 
+  // ─── Dashboard & Activity Endpoints ─────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get(":id/donor-summary")
+  @ApiOperation({ summary: "Get donor summary (listings, requests, donations)" })
+  @ApiParam({ name: "id", description: "Donor User ID" })
+  @ApiResponse({ status: 200, description: "Donor summary retrieved successfully" })
+  getDonorSummary(@Param("id", ParseIntPipe) id: number) {
+    return this.usersService.getDonorSummary(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get(":id/donor-activity")
+  @ApiOperation({ summary: "Get donor recent activity (incoming & accepted requests)" })
+  @ApiParam({ name: "id", description: "Donor User ID" })
+  @ApiResponse({ status: 200, description: "Donor activity retrieved successfully" })
+  getDonorRecentActivity(@Param("id", ParseIntPipe) id: number) {
+    return this.usersService.getDonorRecentActivity(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get(":id/buyer-summary")
+  @ApiOperation({ summary: "Get buyer summary (requests, accepted donors, deliveries)" })
+  @ApiParam({ name: "id", description: "Buyer User ID" })
+  @ApiResponse({ status: 200, description: "Buyer summary retrieved successfully" })
+  getBuyerSummary(@Param("id", ParseIntPipe) id: number) {
+    return this.usersService.getBuyerSummary(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get(":id/buyer-activity")
+  @ApiOperation({ summary: "Get buyer recent activity (recent requests)" })
+  @ApiParam({ name: "id", description: "Buyer User ID" })
+  @ApiResponse({ status: 200, description: "Buyer activity retrieved successfully" })
+  getBuyerRecentActivity(@Param("id", ParseIntPipe) id: number) {
+    return this.usersService.getBuyerRecentActivity(id);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Get user by ID" })
   @ApiParam({ name: "id", description: "User ID" })
