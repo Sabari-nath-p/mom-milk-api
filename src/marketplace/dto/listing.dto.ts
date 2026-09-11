@@ -59,7 +59,6 @@ export class CreateListingDto {
   @ApiProperty({ example: 1500 })
   @Type(() => Number)
   @IsNumber()
-  @IsPositive()
   price: number;
 
   @ApiPropertyOptional({ example: 500, description: "Quantity in mls (e.g. for milk)" })
@@ -96,6 +95,12 @@ export class CreateListingDto {
   @ValidateNested({ each: true })
   @Type(() => MarketplaceImageDto)
   images?: MarketplaceImageDto[];
+
+  @ApiPropertyOptional({ example: 6, description: "Age of the donor baby in months" })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  donorBabyAge?: number;
 
   // ─── Optional product detail fields ────────────────────────────────────────
 
@@ -207,6 +212,16 @@ export class ListingQueryDto {
   @IsNumber()
   @Type(() => Number)
   maxPrice?: number;
+
+  @ApiPropertyOptional({ description: "Filter by featured listings" })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === "true") return true;
+    if (value === "false") return false;
+    return value;
+  })
+  @IsBoolean()
+  isFeatured?: boolean;
 
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()

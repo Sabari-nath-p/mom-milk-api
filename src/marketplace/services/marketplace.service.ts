@@ -413,6 +413,7 @@ export class MarketplaceService {
       ...(category && { category }),
       ...(condition && { condition }),
       ...(zipcodeFilter && { zipcode: { in: zipcodeFilter } }),
+      ...(query.isFeatured !== undefined && { isFeatured: query.isFeatured }),
       ...(minPrice !== undefined || maxPrice !== undefined
         ? {
             price: {

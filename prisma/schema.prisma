@@ -716,7 +716,10 @@ model MarketplaceListing {
   boxContains String?                  // JSON array of strings e.g. '["Cradle","Mattress"]'
 
   isDonation  Boolean                  @default(false)
+  isFeatured  Boolean                  @default(false)
   status      MarketplaceListingStatus @default(ACTIVE)
+
+  donorBabyAge Int?                    // in months
 
   images      MarketplaceImage[]
   savedBy     MarketplaceSavedListing[]
