@@ -225,9 +225,23 @@ export class AuthService {
       if (completeProfileDto.healthStyle) {
         userData.healthStyle = completeProfileDto.healthStyle;
       }
+      if (completeProfileDto.tags) {
+        userData.tags = completeProfileDto.tags;
+      }
       userData.ableToShareMedicalRecord =
         completeProfileDto.ableToShareMedicalRecord || false;
+      if (completeProfileDto.availableForDonation !== undefined) {
+        userData.availableForDonation = completeProfileDto.availableForDonation;
+      }
+      if (completeProfileDto.isAvailable !== undefined) {
+        userData.isAvailable = completeProfileDto.isAvailable;
+      }
     }
+
+    if (completeProfileDto.profilePhoto) {
+      userData.profilePhoto = completeProfileDto.profilePhoto;
+    }
+
 
     const newUser = await this.prisma.user.create({
       data: userData,
@@ -287,9 +301,20 @@ export class AuthService {
     }
     if (updateData.healthStyle !== undefined)
       updatePayload.healthStyle = updateData.healthStyle;
+    if (updateData.tags !== undefined)
+      updatePayload.tags = updateData.tags;
     if (updateData.ableToShareMedicalRecord !== undefined) {
       updatePayload.ableToShareMedicalRecord =
         updateData.ableToShareMedicalRecord;
+    }
+    if (updateData.availableForDonation !== undefined) {
+      updatePayload.availableForDonation = updateData.availableForDonation;
+    }
+    if (updateData.isAvailable !== undefined) {
+      updatePayload.isAvailable = updateData.isAvailable;
+    }
+    if (updateData.profilePhoto !== undefined) {
+      updatePayload.profilePhoto = updateData.profilePhoto;
     }
 
     // Set isNew to false when user updates profile

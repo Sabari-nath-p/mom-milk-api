@@ -63,10 +63,22 @@ export class UsersService {
       select: {
         id: true,
         name: true,
+        email: true,
+        phone: true,
+        zipcode: true,
         description: true,
         profilePhoto: true,
         availableForDonation: true,
+        isAvailable: true,
         userType: true,
+        bloodGroup: true,
+        babyDeliveryDate: true,
+        healthStyle: true,
+        tags: true,
+        ableToShareMedicalRecord: true,
+        language: true,
+        facebookLink: true,
+        instagramLink: true,
         marketplaceListings: {
           where: { status: "ACTIVE" },
           include: {

@@ -102,6 +102,38 @@ export class CompleteProfileDto {
   @IsString()
   language?: string;
 
+  @ApiPropertyOptional({
+    example: '["organic", "active"]',
+    description: "Tags for the user profile as JSON string array",
+  })
+  @IsOptional()
+  @IsString()
+  tags?: string;
+
+  @ApiPropertyOptional({
+    example: "https://example.com/photo.jpg",
+    description: "Profile photo URL",
+  })
+  @IsOptional()
+  @IsString()
+  profilePhoto?: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: "Available for donation (for donors)",
+  })
+  @IsOptional()
+  @IsBoolean()
+  availableForDonation?: boolean;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: "Availability status",
+  })
+  @IsOptional()
+  @IsBoolean()
+  isAvailable?: boolean;
+
   // Social media links (optional for all users)
   @ApiPropertyOptional({
     example: "https://facebook.com/username",
@@ -160,6 +192,18 @@ export class AuthResponseDto {
     isActive: boolean;
     fcmToken?: string;
     lastLoginAt?: Date;
+    description?: string;
+    bloodGroup?: string;
+    babyDeliveryDate?: Date;
+    healthStyle?: string;
+    tags?: string;
+    ableToShareMedicalRecord?: boolean;
+    isAvailable?: boolean;
+    availableForDonation?: boolean;
+    profilePhoto?: string;
+    language?: string;
+    facebookLink?: string;
+    instagramLink?: string;
     createdAt: Date;
     updatedAt: Date;
   };
