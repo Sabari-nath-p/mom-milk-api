@@ -74,6 +74,15 @@ export class CreateUserDto {
   healthStyle?: string;
 
   @ApiProperty({
+    example: '["active", "verified_donor"]',
+    required: false,
+    description: "Tags for the user profile as JSON string array",
+  })
+  @IsString()
+  @IsOptional()
+  tags?: string;
+
+  @ApiProperty({
     example: true,
     required: false,
     description: "Whether donor is able to share medical records",
@@ -144,6 +153,14 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   healthStyle?: string;
+
+  @ApiProperty({
+    example: '["active", "verified_donor"]',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  tags?: string;
 
   @ApiProperty({ example: true, required: false })
   @IsBoolean()

@@ -110,6 +110,8 @@ enum MarketplaceCategory {
   BOOKS
   EDUCATIONAL
   MILK
+  BREAST_MILK
+  FORMULA
   OTHER
 }
 
@@ -133,6 +135,7 @@ model User {
   bloodGroup                     String?
   babyDeliveryDate               DateTime?
   healthStyle                    String? // JSON string array - optional
+  tags                           String? // JSON string array - optional
   ableToShareMedicalRecord       Boolean?  @default(false)
   isAvailable                    Boolean?  @default(true) // For donors - availability status
   availableForDonation           Boolean?  @default(false)

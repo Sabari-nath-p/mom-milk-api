@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE `marketplace_listings` ADD COLUMN `donorBabyAge` INTEGER NULL,
+    ADD COLUMN `isFeatured` BOOLEAN NOT NULL DEFAULT false,
+    MODIFY `category` ENUM('CRADLES', 'TOYS', 'CLOTHING', 'STROLLERS', 'CAR_SEATS', 'FEEDING', 'BATH', 'SAFETY', 'BOOKS', 'EDUCATIONAL', 'MILK', 'BREAST_MILK', 'FORMULA', 'OTHER') NOT NULL;
+
+-- AlterTable
+ALTER TABLE `users` ADD COLUMN `tags` VARCHAR(191) NULL;
