@@ -74,13 +74,15 @@ export class CreateUserDto {
   healthStyle?: string;
 
   @ApiProperty({
-    example: '["active", "verified_donor"]',
+    example: ["active", "verified_donor"],
     required: false,
-    description: "Tags for the user profile as JSON string array",
+    description: "Tags for the user profile",
+    type: [String],
   })
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  tags?: string;
+  tags?: string[];
 
   @ApiProperty({
     example: true,
@@ -155,12 +157,14 @@ export class UpdateUserDto {
   healthStyle?: string;
 
   @ApiProperty({
-    example: '["active", "verified_donor"]',
+    example: ["active", "verified_donor"],
     required: false,
+    type: [String],
   })
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  tags?: string;
+  tags?: string[];
 
   @ApiProperty({ example: true, required: false })
   @IsBoolean()

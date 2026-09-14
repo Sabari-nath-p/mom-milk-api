@@ -43,10 +43,15 @@ export class UsersController {
   }
 
   @Get("donors")
-  @ApiOperation({ summary: "Get all donor users" })
-  @ApiResponse({ status: 200, description: "List of all donors" })
-  findDonors() {
-    return this.usersService.findDonors();
+  @ApiOperation({ summary: "Get all donor users (can filter by tags)" })
+  @ApiQuery({
+    name: "tags",
+    required: false,
+    description: "Comma-separated list of tags to filter by (e.g. active,verified)",
+  })
+  @ApiResponse({ status: 200, description: "List of donors" })
+  findDonors(@Query("tags") tags?: string) {
+    return this.usersService.findDonors(tags);
   }
 
   @Get("buyers")

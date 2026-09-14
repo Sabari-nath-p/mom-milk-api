@@ -104,10 +104,36 @@ export class UsersService {
     });
   }
 
-  async findDonors() {
-    return this.prisma.user.findMany({
-      where: { userType: UserType.DONOR },
+  async findDonors(tagsStr?: string) {
+    const where: any = { userType: UserType.DONOR };
+    
+    if (tagsStr) {
+      const tagsArray = tagsStr.split(',').map(t => t.trim());
+      // Match users who have ANY of the provided tags (using OR)
+      where.OR = tagsArray.map(tag => ({
+        tags: { contains: `"${tag}"` }
+      }));
+    }
+
+    const donors = await this.prisma.user.findMany({
+      where,
       orderBy: { createdAt: "desc" },
+    });
+
+    // Parse the JSON string array back to actual arrays for the response
+    return donors.map(donor => {
+      const mapped = { ...donor };
+      if (mapped.tags) {
+        try {
+          mapped.tags = JSON.parse(mapped.tags as unknown as string);
+        } catch (e) {}
+      }
+      if (mapped.healthStyle) {
+        try {
+          mapped.healthStyle = JSON.parse(mapped.healthStyle as unknown as string);
+        } catch (e) {}
+      }
+      return mapped;
     });
   }
 

@@ -103,12 +103,14 @@ export class CompleteProfileDto {
   language?: string;
 
   @ApiPropertyOptional({
-    example: '["organic", "active"]',
-    description: "Tags for the user profile as JSON string array",
+    example: ["organic", "active"],
+    description: "Tags for the user profile",
+    type: [String],
   })
   @IsOptional()
-  @IsString()
-  tags?: string;
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 
   @ApiPropertyOptional({
     example: "https://example.com/photo.jpg",
@@ -196,7 +198,7 @@ export class AuthResponseDto {
     bloodGroup?: string;
     babyDeliveryDate?: Date;
     healthStyle?: string;
-    tags?: string;
+    tags?: string[];
     ableToShareMedicalRecord?: boolean;
     isAvailable?: boolean;
     availableForDonation?: boolean;
