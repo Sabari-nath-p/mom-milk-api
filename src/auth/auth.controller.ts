@@ -23,6 +23,7 @@ import {
   SendOtpDto,
   VerifyOtpDto,
   CompleteProfileDto,
+  CompleteProfileRequestDto,
   UpdateFcmTokenDto,
   UpdateLanguageDto,
   DisableUserDto,
@@ -71,7 +72,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 409, description: "User already exists" })
   async completeProfile(
-    @Body() completeProfileDto: CompleteProfileDto & { email: string },
+    @Body() completeProfileDto: CompleteProfileRequestDto,
   ): Promise<AuthResponseDto> {
     const { email, ...profileData } = completeProfileDto;
     return this.authService.completeProfile(email, profileData);

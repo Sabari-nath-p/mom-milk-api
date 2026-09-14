@@ -155,6 +155,15 @@ export class CompleteProfileDto {
   instagramLink?: string;
 }
 
+export class CompleteProfileRequestDto extends CompleteProfileDto {
+  @ApiProperty({
+    example: "user@example.com",
+    description: "User email address",
+  })
+  @IsEmail()
+  email: string;
+}
+
 export class UpdateLanguageDto {
   @ApiProperty({ example: "Spanish", description: "Preferred language" })
   @IsString()
