@@ -5,6 +5,7 @@ import {
   IsBoolean,
   Length,
   IsEnum,
+  IsArray,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { UserType } from "@prisma/client";
