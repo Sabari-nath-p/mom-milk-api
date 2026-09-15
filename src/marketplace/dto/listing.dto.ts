@@ -76,6 +76,11 @@ export class CreateListingDto {
   @IsBoolean()
   isDonation?: boolean;
 
+  @ApiPropertyOptional({ example: false, description: "Whether the listing is featured" })
+  @IsOptional()
+  @IsBoolean()
+  isFeatured?: boolean;
+
   @ApiProperty({ enum: MarketplaceCondition })
   @IsEnum(MarketplaceCondition)
   condition: MarketplaceCondition;
