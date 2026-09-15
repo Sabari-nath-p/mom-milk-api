@@ -226,7 +226,7 @@ export class AuthService {
         userData.healthStyle = completeProfileDto.healthStyle;
       }
       if (completeProfileDto.tags) {
-        userData.tags = completeProfileDto.tags;
+        userData.tags = JSON.stringify(completeProfileDto.tags);
       }
       userData.ableToShareMedicalRecord =
         completeProfileDto.ableToShareMedicalRecord || false;
@@ -302,7 +302,7 @@ export class AuthService {
     if (updateData.healthStyle !== undefined)
       updatePayload.healthStyle = updateData.healthStyle;
     if (updateData.tags !== undefined)
-      updatePayload.tags = updateData.tags;
+      updatePayload.tags = updateData.tags ? JSON.stringify(updateData.tags) : null;
     if (updateData.ableToShareMedicalRecord !== undefined) {
       updatePayload.ableToShareMedicalRecord =
         updateData.ableToShareMedicalRecord;
@@ -412,7 +412,14 @@ export class AuthService {
       throw new NotFoundException("User not found");
     }
 
-    const { ...userWithoutSensitiveData } = user;
+    const { ...userWithoutSensitiveData }: any = user;
+    if (typeof userWithoutSensitiveData.tags === 'string') {
+      try {
+        userWithoutSensitiveData.tags = JSON.parse(userWithoutSensitiveData.tags);
+      } catch (e) {
+        userWithoutSensitiveData.tags = [];
+      }
+    }
     return userWithoutSensitiveData;
   }
 
@@ -444,7 +451,15 @@ export class AuthService {
     };
     const accessToken = this.jwtService.sign(payload);
 
-    const { ...userResponse } = user;
+    const { ...userResponse }: any = user;
+
+    if (typeof userResponse.tags === 'string') {
+      try {
+        userResponse.tags = JSON.parse(userResponse.tags);
+      } catch (e) {
+        userResponse.tags = [];
+      }
+    }
 
     return {
       accessToken,
