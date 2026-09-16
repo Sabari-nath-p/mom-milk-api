@@ -8,15 +8,23 @@ import {
   Patch,
   Param,
   ParseIntPipe,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { memoryStorage } from "multer";
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiConsumes,
+  ApiBody,
 } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";
+import { UploadsService } from "../uploads/uploads.service";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { AdminGuard } from "./guards/admin.guard";
 import {
@@ -35,7 +43,10 @@ import {
 @ApiTags("Authentication")
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly uploadsService: UploadsService,
+  ) {}
 
   @Post("send-otp")
   @ApiOperation({ summary: "Send OTP to email for authentication" })
@@ -107,6 +118,55 @@ export class AuthController {
     @Body() updateData: Partial<CompleteProfileDto>,
   ): Promise<AuthResponseDto> {
     return this.authService.updateProfile(req.user.id, updateData);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post("profile/photo")
+  @ApiOperation({ summary: "Upload and update user profile photo" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        file: {
+          type: "string",
+          format: "binary",
+        },
+      },
+      required: ["file"],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor("file", {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
+  @ApiResponse({
+    status: 200,
+    description: "Profile photo updated successfully",
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 400, description: "Bad request - invalid file" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  async updateProfilePhoto(
+    @Request() req,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<AuthResponseDto> {
+    if (!file) {
+      throw new BadRequestException("No file uploaded");
+    }
+    const nonImage = !file.mimetype?.startsWith("image/");
+    if (nonImage) {
+      throw new BadRequestException("Only image files are allowed");
+    }
+    const results = await this.uploadsService.uploadImages([file]);
+    return this.authService.updateProfile(req.user.id, {
+      profilePhoto: results[0].url,
+    });
   }
 
   @UseGuards(JwtAuthGuard)

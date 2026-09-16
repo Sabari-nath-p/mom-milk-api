@@ -9,7 +9,12 @@ import {
   ParseIntPipe,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { memoryStorage } from "multer";
 import {
   ApiTags,
   ApiOperation,
@@ -17,15 +22,21 @@ import {
   ApiParam,
   ApiQuery,
   ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { UsersService } from "./users.service";
+import { UploadsService } from "../uploads/uploads.service";
 import { CreateUserDto, UpdateUserDto, UserType } from "./dto/user.dto";
 
 @ApiTags("users")
 @Controller("users")
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly uploadsService: UploadsService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: "Create a new user (donor, buyer, or admin)" })
@@ -169,6 +180,51 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ) {
     return this.usersService.update(id, updateUserDto);
+  }
+
+  @Post(":id/profile-photo")
+  @ApiOperation({ summary: "Upload and update user profile photo" })
+  @ApiParam({ name: "id", description: "User ID" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        file: {
+          type: "string",
+          format: "binary",
+        },
+      },
+      required: ["file"],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor("file", {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
+  @ApiResponse({
+    status: 200,
+    description: "Profile photo updated successfully",
+  })
+  @ApiResponse({ status: 400, description: "Bad request - invalid file" })
+  @ApiResponse({ status: 404, description: "User not found" })
+  async updateProfilePhoto(
+    @Param("id", ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException("No file uploaded");
+    }
+    const nonImage = !file.mimetype?.startsWith("image/");
+    if (nonImage) {
+      throw new BadRequestException("Only image files are allowed");
+    }
+    const results = await this.uploadsService.uploadImages([file]);
+    return this.usersService.update(id, { profilePhoto: results[0].url });
   }
 
   @Delete(":id")
