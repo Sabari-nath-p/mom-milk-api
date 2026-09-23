@@ -343,11 +343,6 @@ export class MarketplaceService {
     // ── Geo setup ──────────────────────────────────────────────────────────────
     // zipcodeFilter: only set when zipcode + radiusKm are both provided
     let zipcodeFilter: string[] | undefined;
-    // Map of zipcode → { lat, lon, country } for all known zipcodes
-    let zipDataMap: Map<
-      string,
-      { lat: number; lon: number; country: string }
-    > = new Map();
     let queryCoords: { lat: number; lon: number } | null = null;
 
     if (zipcode) {
@@ -367,37 +362,6 @@ export class MarketplaceService {
         zipcodeFilter = nearby.map((z) => z.zipcode);
         if (zipcodeFilter.length === 0)
           return this.emptyPage(safePage, safeLimit);
-        for (const z of nearby) {
-          zipDataMap.set(z.zipcode, {
-            lat: z.latitude,
-            lon: z.longitude,
-            country: z.country,
-          });
-        }
-      } else {
-        // No radius filter – load ALL zipcodes for distance computation
-        const allZips = await this.prisma.zipCode.findMany({
-          select: { zipcode: true, latitude: true, longitude: true, country: true },
-        });
-        for (const z of allZips) {
-          zipDataMap.set(z.zipcode, {
-            lat: z.latitude,
-            lon: z.longitude,
-            country: z.country,
-          });
-        }
-      }
-    } else {
-      // No query zipcode – still load all zipcodes so we can resolve currency per listing
-      const allZips = await this.prisma.zipCode.findMany({
-        select: { zipcode: true, latitude: true, longitude: true, country: true },
-      });
-      for (const z of allZips) {
-        zipDataMap.set(z.zipcode, {
-          lat: z.latitude,
-          lon: z.longitude,
-          country: z.country,
-        });
       }
     }
 
@@ -459,6 +423,24 @@ export class MarketplaceService {
         }),
         this.prisma.marketplaceListing.count({ where }),
       ]);
+    }
+
+    // ── Fetch necessary zipcodes for the retrieved listings ───────────────────
+    const zipDataMap = new Map<string, { lat: number; lon: number; country: string }>();
+    const uniqueZips = Array.from(new Set(listings.map(l => l.zipcode).filter(Boolean))) as string[];
+    
+    if (uniqueZips.length > 0) {
+      const zips = await this.prisma.zipCode.findMany({
+        where: { zipcode: { in: uniqueZips } },
+        select: { zipcode: true, latitude: true, longitude: true, country: true },
+      });
+      for (const z of zips) {
+        zipDataMap.set(z.zipcode, {
+          lat: z.latitude,
+          lon: z.longitude,
+          country: z.country,
+        });
+      }
     }
 
     // ── Attach distance, currency & deserialize array fields ─────────────────
