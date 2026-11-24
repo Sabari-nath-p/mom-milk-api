@@ -5,6 +5,7 @@ import { PassportModule } from "@nestjs/passport";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
+import { VendorGuard } from "./guards/vendor.guard";
 import { PrismaModule } from "../prisma/prisma.module";
 import { MailModule } from "../mail/mail.module";
 import { FirebaseModule } from "../firebase/firebase.module";
@@ -23,7 +24,7 @@ import { RequestModule } from "../requests/requests.module";
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtModule],
+  providers: [AuthService, JwtStrategy, VendorGuard],
+  exports: [AuthService, JwtModule, VendorGuard],
 })
 export class AuthModule {}

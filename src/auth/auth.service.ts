@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../prisma/prisma.service";
@@ -20,6 +21,9 @@ import {
   AuthResponseDto,
   OtpResponseDto,
   VerifyOtpResponseDto,
+  VendorSendOtpDto,
+  VendorLoginDto,
+  VendorAuthResponseDto,
 } from "./dto/auth.dto";
 import { UserType } from "@prisma/client";
 
@@ -606,5 +610,134 @@ export class AuthService {
 
   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
+  }
+
+  /**
+   * Send OTP specifically for vendor login.
+   * Validates that the email belongs to an existing user with an active Vendor profile.
+   */
+  async sendVendorOtp(dto: VendorSendOtpDto): Promise<OtpResponseDto> {
+    const { email } = dto;
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { vendorProfile: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        "No account found with this email. Please register first.",
+      );
+    }
+
+    if (!user.vendorProfile) {
+      throw new ForbiddenException(
+        "This account is not registered as a vendor. Please register as a vendor first.",
+      );
+    }
+
+    if (!user.vendorProfile.isActive) {
+      throw new ForbiddenException(
+        "Your vendor account has been deactivated. Please contact support.",
+      );
+    }
+
+    // Reuse existing OTP sending mechanism
+    return this.sendOtp({ email });
+  }
+
+  /**
+   * Authenticate vendor with OTP and return JWT token and vendor profile.
+   */
+  async vendorLogin(dto: VendorLoginDto): Promise<VendorAuthResponseDto> {
+    const { email, otp } = dto;
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        vendorProfile: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("Invalid email or account not found");
+    }
+
+    if (!user.vendorProfile) {
+      throw new ForbiddenException(
+        "This account is not registered as a vendor. Please register as a vendor first.",
+      );
+    }
+
+    if (!user.vendorProfile.isActive) {
+      throw new ForbiddenException(
+        "Your vendor account has been deactivated. Please contact support.",
+      );
+    }
+
+    // Verify OTP
+    const isDefaultOtp = otp === this.DEFAULT_OTP;
+    if (!isDefaultOtp) {
+      const otpRecord = await this.prisma.otpVerification.findFirst({
+        where: {
+          email,
+          otp,
+          isUsed: false,
+          expiresAt: {
+            gte: new Date(),
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      if (!otpRecord) {
+        await this.incrementOtpAttempts(email);
+        throw new UnauthorizedException("Invalid or expired OTP");
+      }
+
+      await this.prisma.otpVerification.update({
+        where: { id: otpRecord.id },
+        data: { isUsed: true },
+      });
+    }
+
+    // Update last login
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    // Generate JWT token with vendor context
+    const payload = {
+      email: user.email,
+      sub: user.id,
+      userType: user.userType,
+      vendorId: user.vendorProfile.id,
+      isVendor: true,
+    };
+    const accessToken = this.jwtService.sign(payload);
+
+    const { vendorProfile, ...userWithoutSensitiveData }: any = user;
+    if (typeof userWithoutSensitiveData.tags === "string") {
+      try {
+        userWithoutSensitiveData.tags = JSON.parse(
+          userWithoutSensitiveData.tags,
+        );
+      } catch {
+        userWithoutSensitiveData.tags = [];
+      }
+    }
+
+    return {
+      success: true,
+      message: "Vendor logged in successfully",
+      authData: {
+        accessToken,
+        user: userWithoutSensitiveData,
+        vendor: vendorProfile,
+      },
+    };
   }
 }

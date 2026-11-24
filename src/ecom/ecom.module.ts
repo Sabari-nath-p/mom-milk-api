@@ -1,6 +1,9 @@
 import { Module } from "@nestjs/common";
 import { PrismaModule } from "../prisma/prisma.module";
 import { RequestModule } from "../requests/requests.module";
+import { AuthModule } from "../auth/auth.module";
+import { MailModule } from "../mail/mail.module";
+import { FirebaseModule } from "../firebase/firebase.module";
 
 // Services
 import { VendorService } from "./services/vendor.service";
@@ -17,7 +20,13 @@ import { EcomOrdersController } from "./controllers/ecom-orders.controller";
 import { EcomReviewsController } from "./controllers/ecom-reviews.controller";
 
 @Module({
-  imports: [PrismaModule, RequestModule],
+  imports: [
+    PrismaModule,
+    RequestModule,
+    AuthModule,
+    MailModule,
+    FirebaseModule,
+  ],
   controllers: [
     VendorController,
     EcomProductsController,
@@ -32,6 +41,6 @@ import { EcomReviewsController } from "./controllers/ecom-reviews.controller";
     EcomOrdersService,
     EcomReviewsService,
   ],
-  exports: [VendorService],
+  exports: [VendorService, EcomOrdersService],
 })
 export class EcomModule {}

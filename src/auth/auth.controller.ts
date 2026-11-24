@@ -38,6 +38,9 @@ import {
   AuthResponseDto,
   OtpResponseDto,
   VerifyOtpResponseDto,
+  VendorSendOtpDto,
+  VendorLoginDto,
+  VendorAuthResponseDto,
 } from "./dto/auth.dto";
 
 @ApiTags("Authentication")
@@ -232,5 +235,51 @@ export class AuthController {
   async refreshToken(@Request() req): Promise<AuthResponseDto> {
     const user = await this.authService.validateUser(req.user.id);
     return this.authService.generateAuthResponse(user);
+  }
+
+  // ─── Vendor Authentication ──────────────────────────────────────────────────
+
+  @Post("vendor/send-otp")
+  @ApiOperation({
+    summary: "Send OTP to vendor email for vendor portal login",
+    description:
+      "Validates that the email belongs to a registered active vendor, then sends an OTP.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "OTP sent successfully to vendor email",
+    type: OtpResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: "Account is not registered as a vendor or is deactivated",
+  })
+  @ApiResponse({ status: 404, description: "User not found" })
+  async sendVendorOtp(
+    @Body() dto: VendorSendOtpDto,
+  ): Promise<OtpResponseDto> {
+    return this.authService.sendVendorOtp(dto);
+  }
+
+  @Post("vendor/login")
+  @ApiOperation({
+    summary: "Login as a vendor using email and OTP",
+    description:
+      "Verifies OTP, checks vendor status, and returns JWT token with vendor profile.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Vendor authenticated successfully",
+    type: VendorAuthResponseDto,
+  })
+  @ApiResponse({ status: 401, description: "Invalid or expired OTP" })
+  @ApiResponse({
+    status: 403,
+    description: "Account is not registered as a vendor or is deactivated",
+  })
+  async vendorLogin(
+    @Body() dto: VendorLoginDto,
+  ): Promise<VendorAuthResponseDto> {
+    return this.authService.vendorLogin(dto);
   }
 }

@@ -40,3 +40,9 @@ export class AdminUpdateVendorDto {
   @IsBoolean()
   isActive?: boolean;
 }
+
+export {
+  VendorSendOtpDto,
+  VendorLoginDto,
+  VendorAuthResponseDto,
+} from "../../auth/dto/auth.dto";

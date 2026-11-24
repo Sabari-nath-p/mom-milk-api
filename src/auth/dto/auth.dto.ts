@@ -263,3 +263,81 @@ export class VerifyOtpResponseDto {
   @ApiPropertyOptional({ description: "Auth data (if existing user)" })
   authData?: AuthResponseDto;
 }
+
+export class VendorSendOtpDto {
+  @ApiProperty({
+    example: "vendor@example.com",
+    description: "Registered vendor email address",
+  })
+  @IsEmail()
+  email: string;
+}
+
+export class VendorLoginDto {
+  @ApiProperty({
+    example: "vendor@example.com",
+    description: "Registered vendor email address",
+  })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({
+    example: "123456",
+    description: "6-digit OTP code (use default OTP 759409 in test/dev)",
+  })
+  @IsString()
+  @Length(6, 6, { message: "OTP must be 6 digits" })
+  otp: string;
+}
+
+export class VendorProfileResponseDto {
+  @ApiProperty({ example: 1 })
+  id: number;
+
+  @ApiProperty({ example: 1 })
+  userId: number;
+
+  @ApiProperty({ example: "Baby Haven Store" })
+  storeName: string;
+
+  @ApiPropertyOptional({ example: "Quality organic products for babies" })
+  description?: string;
+
+  @ApiPropertyOptional({ example: "https://example.com/logo.png" })
+  logoUrl?: string;
+
+  @ApiProperty({ example: "600001" })
+  zipcode: string;
+
+  @ApiPropertyOptional({ example: "123 Market Road" })
+  address?: string;
+
+  @ApiProperty({ example: true })
+  isVerified: boolean;
+
+  @ApiProperty({ example: true })
+  isActive: boolean;
+
+  @ApiProperty()
+  createdAt: Date;
+
+  @ApiProperty()
+  updatedAt: Date;
+}
+
+export class VendorAuthResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ example: "Vendor logged in successfully" })
+  message: string;
+
+  @ApiProperty({
+    description: "Auth token and vendor profile details",
+  })
+  authData: {
+    accessToken: string;
+    user: any;
+    vendor: VendorProfileResponseDto;
+  };
+}
