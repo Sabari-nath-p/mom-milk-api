@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
-import { IsString, IsOptional, IsBoolean, MaxLength } from "class-validator";
+import { IsString, IsOptional, IsBoolean, MaxLength, MinLength } from "class-validator";
 
 export class CreateVendorDto {
   @ApiProperty({ example: "Baby World Store" })
@@ -25,6 +25,15 @@ export class CreateVendorDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+  @ApiPropertyOptional({
+    example: "SecurePass123!",
+    description: "Password for vendor account (allows logging in with email and password)",
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(6, { message: "Password must be at least 6 characters long" })
+  password?: string;
 }
 
 export class UpdateVendorDto extends PartialType(CreateVendorDto) {}
@@ -44,5 +53,9 @@ export class AdminUpdateVendorDto {
 export {
   VendorSendOtpDto,
   VendorLoginDto,
+  VendorPasswordLoginDto,
+  RegisterVendorDto,
+  UpdateVendorPasswordDto,
   VendorAuthResponseDto,
+  VendorProfileResponseDto,
 } from "../../auth/dto/auth.dto";

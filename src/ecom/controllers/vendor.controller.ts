@@ -27,8 +27,11 @@ import {
   CreateVendorDto,
   UpdateVendorDto,
   AdminUpdateVendorDto,
+  RegisterVendorDto,
   VendorSendOtpDto,
   VendorLoginDto,
+  VendorPasswordLoginDto,
+  UpdateVendorPasswordDto,
   VendorAuthResponseDto,
 } from "../dto/vendor.dto";
 import {
@@ -47,17 +50,98 @@ export class VendorController {
     private readonly ordersService: EcomOrdersService,
   ) {}
 
-  
+  // ─── Vendor Registration & Authentication ───────────────────────────────────
 
-  // ─── Vendor Profile ────────────────────────────────────────────────────────
+  @Post("register")
+  @ApiOperation({
+    summary: "Register as a vendor / seller (Direct Registration)",
+    description:
+      "Direct public registration for new vendors with owner details, password, and store information. Automatically returns access token and vendor profile.",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Vendor registered successfully",
+    type: VendorAuthResponseDto,
+  })
+  @ApiResponse({ status: 409, description: "Vendor already exists with this email" })
+  register(@Body() dto: RegisterVendorDto) {
+    return this.vendorService.directRegister(dto);
+  }
+
+  @Post("auth/register")
+  @ApiOperation({
+    summary: "Register as a vendor / seller (Auth namespace alias)",
+    description:
+      "Alias endpoint for vendor direct registration under /ecom/vendor/auth/register.",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Vendor registered successfully",
+    type: VendorAuthResponseDto,
+  })
+  registerAuthAlias(@Body() dto: RegisterVendorDto) {
+    return this.vendorService.directRegister(dto);
+  }
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Post("register")
-  @ApiOperation({ summary: "Register as a vendor/seller" })
-  register(@Request() req, @Body() dto: CreateVendorDto) {
+  @Post("register-profile")
+  @ApiOperation({
+    summary: "Register vendor profile for an existing authenticated user",
+    description:
+      "Allows an already logged-in user (Buyer/Donor) to upgrade their account to become a vendor.",
+  })
+  registerProfile(@Request() req, @Body() dto: CreateVendorDto) {
     return this.vendorService.register(req.user.id, dto);
   }
+
+  @Post("auth/send-otp")
+  @ApiOperation({
+    summary: "Send OTP to vendor email for login",
+    description:
+      "Validates that the email belongs to a registered active vendor, then sends an OTP.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "OTP sent successfully to vendor email",
+    type: OtpResponseDto,
+  })
+  sendOtp(@Body() dto: VendorSendOtpDto): Promise<OtpResponseDto> {
+    return this.authService.sendVendorOtp(dto);
+  }
+
+  @Post("auth/login-password")
+  @ApiOperation({
+    summary: "Login as a vendor using email and password",
+    description:
+      "Authenticates vendor credentials using password and returns JWT token with vendor profile.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Vendor authenticated successfully",
+    type: VendorAuthResponseDto,
+  })
+  @ApiResponse({ status: 401, description: "Invalid email or password" })
+  loginPassword(@Body() dto: VendorPasswordLoginDto): Promise<VendorAuthResponseDto> {
+    return this.authService.vendorPasswordLogin(dto);
+  }
+
+  @Post("auth/login")
+  @ApiOperation({
+    summary: "Login as a vendor using email with password or OTP",
+    description:
+      "Verifies credentials (password or 6-digit OTP), checks vendor status, and returns JWT token with vendor profile.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Vendor authenticated successfully",
+    type: VendorAuthResponseDto,
+  })
+  login(@Body() dto: VendorLoginDto): Promise<VendorAuthResponseDto> {
+    return this.authService.vendorLogin(dto);
+  }
+
+  // ─── Vendor Profile Management ─────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -73,6 +157,18 @@ export class VendorController {
   @ApiOperation({ summary: "Update my vendor profile" })
   update(@Request() req, @Body() dto: UpdateVendorDto) {
     return this.vendorService.update(req.user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, VendorGuard)
+  @ApiBearerAuth()
+  @Patch("password")
+  @ApiOperation({
+    summary: "Change or set vendor account password",
+    description:
+      "Allows an authenticated vendor to change their password for password login.",
+  })
+  updatePassword(@Request() req, @Body() dto: UpdateVendorPasswordDto) {
+    return this.vendorService.updatePassword(req.user.id, dto);
   }
 
   // ─── Vendor Order Requests & Details (Vendor Portal) ───────────────────────

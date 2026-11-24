@@ -6,6 +6,8 @@ import {
   Length,
   IsEnum,
   IsArray,
+  MinLength,
+  MaxLength,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { UserType } from "@prisma/client";
@@ -281,13 +283,127 @@ export class VendorLoginDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({
-    example: "123456",
-    description: "6-digit OTP code (use default OTP 759409 in test/dev)",
+  @ApiPropertyOptional({
+    example: "SecurePass123!",
+    description: "Vendor password (required if logging in with password)",
   })
+  @IsOptional()
+  @IsString()
+  password?: string;
+
+  @ApiPropertyOptional({
+    example: "759409",
+    description: "6-digit OTP code (required if logging in with OTP)",
+  })
+  @IsOptional()
   @IsString()
   @Length(6, 6, { message: "OTP must be 6 digits" })
-  otp: string;
+  otp?: string;
+}
+
+export class VendorPasswordLoginDto {
+  @ApiProperty({
+    example: "vendor@example.com",
+    description: "Registered vendor email address",
+  })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({
+    example: "SecurePass123!",
+    description: "Vendor account password",
+  })
+  @IsString()
+  @MinLength(6, { message: "Password must be at least 6 characters" })
+  password: string;
+}
+
+export class RegisterVendorDto {
+  @ApiProperty({
+    example: "John Doe",
+    description: "Owner / contact person full name",
+  })
+  @IsString()
+  name: string;
+
+  @ApiProperty({
+    example: "vendor@example.com",
+    description: "Vendor email address",
+  })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({
+    example: "+919876543210",
+    description: "Vendor contact phone number",
+  })
+  @IsString()
+  phone: string;
+
+  @ApiProperty({
+    example: "SecurePass123!",
+    description: "Vendor account password (min 6 characters)",
+  })
+  @IsString()
+  @MinLength(6, { message: "Password must be at least 6 characters long" })
+  password: string;
+
+  @ApiProperty({
+    example: "Baby Haven Store",
+    description: "Vendor store / business name",
+  })
+  @IsString()
+  @MaxLength(100)
+  storeName: string;
+
+  @ApiPropertyOptional({
+    example: "Quality organic products for babies and mothers",
+    description: "Store description or bio",
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({
+    example: "https://example.com/logo.png",
+    description: "Store logo image URL",
+  })
+  @IsOptional()
+  @IsString()
+  logoUrl?: string;
+
+  @ApiProperty({
+    example: "600001",
+    description: "Store location zipcode",
+  })
+  @IsString()
+  zipcode: string;
+
+  @ApiPropertyOptional({
+    example: "123 Market Road, Chennai",
+    description: "Store physical address",
+  })
+  @IsOptional()
+  @IsString()
+  address?: string;
+}
+
+export class UpdateVendorPasswordDto {
+  @ApiPropertyOptional({
+    example: "OldPass123!",
+    description: "Current password (required if an existing password was set)",
+  })
+  @IsOptional()
+  @IsString()
+  currentPassword?: string;
+
+  @ApiProperty({
+    example: "NewSecurePass123!",
+    description: "New password (min 6 characters)",
+  })
+  @IsString()
+  @MinLength(6, { message: "Password must be at least 6 characters long" })
+  newPassword: string;
 }
 
 export class VendorProfileResponseDto {

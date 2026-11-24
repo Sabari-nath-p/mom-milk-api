@@ -23,8 +23,11 @@ import {
   VerifyOtpResponseDto,
   VendorSendOtpDto,
   VendorLoginDto,
+  VendorPasswordLoginDto,
+  RegisterVendorDto,
   VendorAuthResponseDto,
 } from "./dto/auth.dto";
+import { PasswordUtil } from "./utils/password.util";
 import { UserType } from "@prisma/client";
 
 @Injectable()
@@ -647,10 +650,105 @@ export class AuthService {
   }
 
   /**
-   * Authenticate vendor with OTP and return JWT token and vendor profile.
+   * Direct public vendor registration.
+   */
+  async registerVendor(
+    dto: RegisterVendorDto,
+  ): Promise<VendorAuthResponseDto> {
+    const {
+      name,
+      email,
+      phone,
+      password,
+      storeName,
+      description,
+      logoUrl,
+      zipcode,
+      address,
+    } = dto;
+
+    let user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { vendorProfile: true },
+    });
+
+    if (user?.vendorProfile) {
+      throw new ConflictException(
+        "A vendor account already exists with this email address. Please log in.",
+      );
+    }
+
+    if (!user) {
+      user = (await this.prisma.user.create({
+        data: {
+          name,
+          email,
+          phone,
+          zipcode,
+          userType: UserType.BUYER,
+          isNew: false,
+          isActive: true,
+          lastLoginAt: new Date(),
+        },
+        include: { vendorProfile: true },
+      })) as any;
+    }
+
+    const passwordHash = PasswordUtil.hashPassword(password);
+    const serializedDesc = PasswordUtil.serializeVendorDescription(
+      description,
+      passwordHash,
+    );
+
+    const vendor = await this.prisma.vendor.create({
+      data: {
+        userId: user.id,
+        storeName,
+        description: serializedDesc,
+        logoUrl,
+        zipcode,
+        address,
+        isActive: true,
+        isVerified: false,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            userType: true,
+          },
+        },
+      },
+    });
+
+    const payload = {
+      email: user.email,
+      sub: user.id,
+      userType: user.userType,
+      vendorId: vendor.id,
+      isVendor: true,
+    };
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      success: true,
+      message: "Vendor registered successfully",
+      authData: {
+        accessToken,
+        user: vendor.user,
+        vendor: PasswordUtil.sanitizeVendor(vendor),
+      },
+    };
+  }
+
+  /**
+   * Authenticate vendor with Password or OTP and return JWT token and sanitized vendor profile.
    */
   async vendorLogin(dto: VendorLoginDto): Promise<VendorAuthResponseDto> {
-    const { email, otp } = dto;
+    const { email, password, otp } = dto;
 
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -660,7 +758,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException("Invalid email or account not found");
+      throw new UnauthorizedException("Invalid email or credentials");
     }
 
     if (!user.vendorProfile) {
@@ -675,32 +773,54 @@ export class AuthService {
       );
     }
 
-    // Verify OTP
-    const isDefaultOtp = otp === this.DEFAULT_OTP;
-    if (!isDefaultOtp) {
-      const otpRecord = await this.prisma.otpVerification.findFirst({
-        where: {
-          email,
-          otp,
-          isUsed: false,
-          expiresAt: {
-            gte: new Date(),
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
+    // Authenticate via Password or OTP
+    if (password) {
+      const { passwordHash } = PasswordUtil.parseVendorDescription(
+        user.vendorProfile.description,
+      );
+      const storedHash = (user.vendorProfile as any).password || passwordHash;
 
-      if (!otpRecord) {
-        await this.incrementOtpAttempts(email);
-        throw new UnauthorizedException("Invalid or expired OTP");
+      if (!storedHash) {
+        throw new BadRequestException(
+          "No password has been set for this vendor account yet. Please log in using OTP or set a password.",
+        );
       }
 
-      await this.prisma.otpVerification.update({
-        where: { id: otpRecord.id },
-        data: { isUsed: true },
-      });
+      const isValid = PasswordUtil.verifyPassword(password, storedHash);
+      if (!isValid) {
+        throw new UnauthorizedException("Invalid email or password");
+      }
+    } else if (otp) {
+      const isDefaultOtp = otp === this.DEFAULT_OTP;
+      if (!isDefaultOtp) {
+        const otpRecord = await this.prisma.otpVerification.findFirst({
+          where: {
+            email,
+            otp,
+            isUsed: false,
+            expiresAt: {
+              gte: new Date(),
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        });
+
+        if (!otpRecord) {
+          await this.incrementOtpAttempts(email);
+          throw new UnauthorizedException("Invalid or expired OTP");
+        }
+
+        await this.prisma.otpVerification.update({
+          where: { id: otpRecord.id },
+          data: { isUsed: true },
+        });
+      }
+    } else {
+      throw new BadRequestException(
+        "Please provide either your password or a 6-digit OTP to log in.",
+      );
     }
 
     // Update last login
@@ -736,8 +856,17 @@ export class AuthService {
       authData: {
         accessToken,
         user: userWithoutSensitiveData,
-        vendor: vendorProfile,
+        vendor: PasswordUtil.sanitizeVendor(vendorProfile),
       },
     };
+  }
+
+  /**
+   * Dedicated vendor password login method.
+   */
+  async vendorPasswordLogin(
+    dto: VendorPasswordLoginDto,
+  ): Promise<VendorAuthResponseDto> {
+    return this.vendorLogin({ email: dto.email, password: dto.password });
   }
 }
