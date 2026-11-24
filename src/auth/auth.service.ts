@@ -24,7 +24,6 @@ import {
   VendorSendOtpDto,
   VendorLoginDto,
   VendorPasswordLoginDto,
-  RegisterVendorDto,
   VendorAuthResponseDto,
 } from "./dto/auth.dto";
 import { PasswordUtil } from "./utils/password.util";
@@ -647,101 +646,6 @@ export class AuthService {
 
     // Reuse existing OTP sending mechanism
     return this.sendOtp({ email });
-  }
-
-  /**
-   * Direct public vendor registration.
-   */
-  async registerVendor(
-    dto: RegisterVendorDto,
-  ): Promise<VendorAuthResponseDto> {
-    const {
-      name,
-      email,
-      phone,
-      password,
-      storeName,
-      description,
-      logoUrl,
-      zipcode,
-      address,
-    } = dto;
-
-    let user = await this.prisma.user.findUnique({
-      where: { email },
-      include: { vendorProfile: true },
-    });
-
-    if (user?.vendorProfile) {
-      throw new ConflictException(
-        "A vendor account already exists with this email address. Please log in.",
-      );
-    }
-
-    if (!user) {
-      user = (await this.prisma.user.create({
-        data: {
-          name,
-          email,
-          phone,
-          zipcode,
-          userType: UserType.BUYER,
-          isNew: false,
-          isActive: true,
-          lastLoginAt: new Date(),
-        },
-        include: { vendorProfile: true },
-      })) as any;
-    }
-
-    const passwordHash = PasswordUtil.hashPassword(password);
-    const serializedDesc = PasswordUtil.serializeVendorDescription(
-      description,
-      passwordHash,
-    );
-
-    const vendor = await this.prisma.vendor.create({
-      data: {
-        userId: user.id,
-        storeName,
-        description: serializedDesc,
-        logoUrl,
-        zipcode,
-        address,
-        isActive: true,
-        isVerified: false,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            userType: true,
-          },
-        },
-      },
-    });
-
-    const payload = {
-      email: user.email,
-      sub: user.id,
-      userType: user.userType,
-      vendorId: vendor.id,
-      isVendor: true,
-    };
-    const accessToken = this.jwtService.sign(payload);
-
-    return {
-      success: true,
-      message: "Vendor registered successfully",
-      authData: {
-        accessToken,
-        user: vendor.user,
-        vendor: PasswordUtil.sanitizeVendor(vendor),
-      },
-    };
   }
 
   /**

@@ -58,4 +58,5 @@ export {
   UpdateVendorPasswordDto,
   VendorAuthResponseDto,
   VendorProfileResponseDto,
+  VendorRegisterResponseDto,
 } from "../../auth/dto/auth.dto";

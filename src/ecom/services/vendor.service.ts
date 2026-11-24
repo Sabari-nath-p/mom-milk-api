@@ -5,9 +5,10 @@ import {
   ForbiddenException,
   BadRequestException,
   UnauthorizedException,
+  Logger,
 } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "../../prisma/prisma.service";
+import { MailService } from "../../mail/mail.service";
 import { UserType } from "@prisma/client";
 import {
   CreateVendorDto,
@@ -20,14 +21,17 @@ import { PasswordUtil } from "../../auth/utils/password.util";
 
 @Injectable()
 export class VendorService {
+  private readonly logger = new Logger(VendorService.name);
+  private readonly OTP_EXPIRY_MINUTES = 5;
+
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService,
+    private mailService: MailService,
   ) {}
 
   /**
    * Direct public vendor registration with owner details, password, and store info.
-   * Creates or links User, hashes password, creates Vendor profile, and issues JWT token.
+   * Creates or links User, hashes password, creates Vendor profile, and generates OTP for verification.
    */
   async directRegister(dto: RegisterVendorDto) {
     const {
@@ -79,7 +83,7 @@ export class VendorService {
     );
 
     // Create the vendor profile
-    const vendor = await this.prisma.vendor.create({
+    await this.prisma.vendor.create({
       data: {
         userId: user.id,
         storeName,
@@ -90,37 +94,38 @@ export class VendorService {
         isActive: true,
         isVerified: false,
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            userType: true,
-          },
-        },
+    });
+
+    // Generate 6-digit OTP for verification
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + this.OTP_EXPIRY_MINUTES);
+
+    // Save OTP to database
+    await this.prisma.otpVerification.create({
+      data: {
+        email,
+        otp,
+        expiresAt,
       },
     });
 
-    // Generate JWT access token for immediate login
-    const payload = {
-      email: user.email,
-      sub: user.id,
-      userType: user.userType,
-      vendorId: vendor.id,
-      isVendor: true,
-    };
-    const accessToken = this.jwtService.sign(payload);
+    // Send OTP email (do not fail registration if SMTP fails)
+    try {
+      await this.mailService.sendOtpEmail(email, otp);
+    } catch (mailError) {
+      this.logger.error(
+        `Failed to send vendor registration OTP email to ${email}:`,
+        mailError,
+      );
+    }
 
     return {
       success: true,
-      message: "Vendor registered successfully",
-      authData: {
-        accessToken,
-        user: vendor.user,
-        vendor: PasswordUtil.sanitizeVendor(vendor),
-      },
+      message:
+        "Vendor registered successfully. OTP sent to your email for verification. Please verify OTP using the vendor login endpoint to generate your access token.",
+      email,
+      expiresAt,
     };
   }
 

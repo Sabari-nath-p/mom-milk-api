@@ -457,3 +457,20 @@ export class VendorAuthResponseDto {
     vendor: VendorProfileResponseDto;
   };
 }
+
+export class VendorRegisterResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({
+    example:
+      "Vendor registered successfully. OTP sent to your email for verification.",
+  })
+  message: string;
+
+  @ApiProperty({ example: "vendor@example.com" })
+  email: string;
+
+  @ApiPropertyOptional({ example: "2026-11-24T12:10:00.000Z" })
+  expiresAt?: Date;
+}

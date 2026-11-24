@@ -41,7 +41,6 @@ import {
   VendorSendOtpDto,
   VendorLoginDto,
   VendorPasswordLoginDto,
-  RegisterVendorDto,
   VendorAuthResponseDto,
 } from "./dto/auth.dto";
 
@@ -240,24 +239,6 @@ export class AuthController {
   }
 
   // ─── Vendor Authentication ──────────────────────────────────────────────────
-
-  @Post("vendor/register")
-  @ApiOperation({
-    summary: "Register a new vendor account with store details and password",
-    description:
-      "Public registration for vendors. Creates account, saves password, establishes vendor profile, and returns JWT token.",
-  })
-  @ApiResponse({
-    status: 201,
-    description: "Vendor registered successfully",
-    type: VendorAuthResponseDto,
-  })
-  @ApiResponse({ status: 409, description: "Vendor already exists with this email" })
-  async registerVendor(
-    @Body() dto: RegisterVendorDto,
-  ): Promise<VendorAuthResponseDto> {
-    return this.authService.registerVendor(dto);
-  }
 
   @Post("vendor/send-otp")
   @ApiOperation({

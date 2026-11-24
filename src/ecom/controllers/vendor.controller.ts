@@ -33,6 +33,7 @@ import {
   VendorPasswordLoginDto,
   UpdateVendorPasswordDto,
   VendorAuthResponseDto,
+  VendorRegisterResponseDto,
 } from "../dto/vendor.dto";
 import {
   VendorOrderQueryDto,
@@ -56,15 +57,15 @@ export class VendorController {
   @ApiOperation({
     summary: "Register as a vendor / seller (Direct Registration)",
     description:
-      "Direct public registration for new vendors with owner details, password, and store information. Automatically returns access token and vendor profile.",
+      "Direct public registration for new vendors with owner details, password, and store information. Generates and sends OTP to email for verification. Use vendor verify-otp (login) endpoint to verify OTP and obtain access token.",
   })
   @ApiResponse({
     status: 201,
-    description: "Vendor registered successfully",
-    type: VendorAuthResponseDto,
+    description: "Vendor registered successfully and OTP sent to email",
+    type: VendorRegisterResponseDto,
   })
   @ApiResponse({ status: 409, description: "Vendor already exists with this email" })
-  register(@Body() dto: RegisterVendorDto) {
+  register(@Body() dto: RegisterVendorDto): Promise<VendorRegisterResponseDto> {
     return this.vendorService.directRegister(dto);
   }
 
@@ -72,14 +73,14 @@ export class VendorController {
   @ApiOperation({
     summary: "Register as a vendor / seller (Auth namespace alias)",
     description:
-      "Alias endpoint for vendor direct registration under /ecom/vendor/auth/register.",
+      "Alias endpoint for vendor direct registration under /ecom/vendor/auth/register. Generates and sends OTP to email for verification.",
   })
   @ApiResponse({
     status: 201,
-    description: "Vendor registered successfully",
-    type: VendorAuthResponseDto,
+    description: "Vendor registered successfully and OTP sent to email",
+    type: VendorRegisterResponseDto,
   })
-  registerAuthAlias(@Body() dto: RegisterVendorDto) {
+  registerAuthAlias(@Body() dto: RegisterVendorDto): Promise<VendorRegisterResponseDto> {
     return this.vendorService.directRegister(dto);
   }
 
